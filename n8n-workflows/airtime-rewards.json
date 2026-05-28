@@ -1,0 +1,88 @@
+{
+  "name": "SafariMove - Airtime Rewards",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "safarimove-airtime",
+        "options": {}
+      },
+      "id": "1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [ 250, 300 ],
+      "webhookId": "safarimove-airtime"
+    },
+    {
+      "parameters": {
+        "url": "https://api.sandbox.africastalking.com/version1/airtime/send",
+        "method": "POST",
+        "authentication": "headerAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "username",
+              "value": "sandbox"
+            },
+            {
+              "name": "recipients",
+              "value": "=[{\"phoneNumber\":\"{{ $json.body.phoneNumber }}\",\"amount\":\"{{ $json.body.currencyCode || 'TZS' }} {{ $json.body.amount || 500 }}\",\"currencyCode\":\"{{ $json.body.currencyCode || 'TZS' }}\"}]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2",
+      "name": "Send Airtime HTTP",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [ 500, 300 ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "2",
+          "name": "Africa's Talking API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "=Airtime reward of {{ $json.body.currencyCode || 'TZS' }} {{ $json.body.amount || 500 }} dispatched successfully",
+        "options": {}
+      },
+      "id": "3",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [ 750, 300 ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Send Airtime HTTP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Airtime HTTP": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {}
+}

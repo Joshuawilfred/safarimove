@@ -1,0 +1,75 @@
+{
+  "name": "SafariMove - SMS Dispatcher",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "safarimove-sms",
+        "options": {}
+      },
+      "id": "1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [ 250, 300 ],
+      "webhookId": "safarimove-sms"
+    },
+    {
+      "parameters": {
+        "credentials": {
+          "africasTalkingApi": {
+            "id": "1",
+            "name": "Africa's Talking account"
+          }
+        },
+        "resource": "sms",
+        "to": "={{ $json.body.phoneNumber }}",
+        "message": "={{ $json.body.message }}",
+        "options": {}
+      },
+      "id": "2",
+      "name": "Send SMS via Africa's Talking",
+      "type": "n8n-nodes-base.africasTalking",
+      "typeVersion": 1,
+      "position": [ 500, 300 ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "SMS dispatched successfully",
+        "options": {}
+      },
+      "id": "3",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [ 750, 300 ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Send SMS via Africa's Talking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send SMS via Africa's Talking": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {}
+}

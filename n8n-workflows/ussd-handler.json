@@ -1,0 +1,92 @@
+{
+  "name": "SafariMove - USSD Handler",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "safarimove-ussd",
+        "options": {}
+      },
+      "id": "1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [ 250, 300 ],
+      "webhookId": "safarimove-ussd"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.body.text }}",
+              "value2": ""
+            }
+          ]
+        }
+      },
+      "id": "2",
+      "name": "Is First Interaction?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [ 450, 300 ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "CON Welcome to SafariMove\n1. Book a Ride\n2. Send Package\n3. Transit Routes\n4. My Balance\n5. Earn Airtime",
+        "options": {}
+      },
+      "id": "3",
+      "name": "Main Menu Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [ 700, 200 ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "END Thank you for using SafariMove. We are processing your request.",
+        "options": {}
+      },
+      "id": "4",
+      "name": "End Session",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [ 700, 400 ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Is First Interaction?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is First Interaction?": {
+      "main": [
+        [
+          {
+            "node": "Main Menu Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "End Session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {}
+}

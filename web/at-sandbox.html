@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AT Sandbox - SafariMove</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body style="padding: 30px; background-color: var(--color-bg-light);">
+    <a href="dashboard.html" class="btn btn-outline" style="margin-bottom: 20px;"><i class="fa-solid fa-arrow-left"></i> Back to Dashboard</a>
+    <h2>Africa's Talking Sandbox Simulator</h2>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+        <div class="glass-panel" style="padding: 20px;">
+            <h3>USSD Simulator</h3>
+            <p>Simulate dialing *384*811#</p>
+            <div style="margin-top: 15px;">
+                <input type="text" id="ussdInput" class="form-control" placeholder="Enter USSD response" style="width: 100%; padding: 10px; margin-bottom: 10px;">
+                <button class="btn btn-primary" onclick="handleUSSDSimulation('+254712345678', document.getElementById('ussdInput').value)">Send</button>
+            </div>
+            <div style="margin-top: 20px; padding: 15px; background: #1e293b; color: #fff; border-radius: 8px; font-family: monospace; white-space: pre-wrap;" id="ussdOutput">
+Waiting for USSD session...
+            </div>
+        </div>
+    </div>
+    <script src="js/app.js"></script>
+    <script src="js/at-sandbox.js"></script>
+</body>
+</html>

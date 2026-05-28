@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | SafariMove</title>
+    <meta name="description" content="Log in to SafariMove to access ride-hailing, delivery, payments, and transit services in Tanzania.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body.login-page {
+            color: var(--color-text-main);
+            background-color: var(--color-bg-dark);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #1e1b4b, var(--color-bg-dark));
+            z-index: -1;
+        }
+
+        .login-bg::after {
+            content: '';
+            position: absolute;
+            top: -20%;
+            left: -20%;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+            filter: blur(80px);
+        }
+
+        .login-bg::before {
+            content: '';
+            position: absolute;
+            bottom: -20%;
+            right: -20%;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%);
+            filter: blur(80px);
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 440px;
+            padding: 40px;
+            margin: 20px;
+            transition: var(--transition);
+            border-radius: var(--border-radius-lg);
+            position: relative;
+            z-index: 10;
+        }
+
+        .login-logo {
+            font-size: 2.2rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            color: var(--color-text-main);
+        }
+
+        .login-logo i {
+            color: var(--color-primary);
+        }
+
+        .login-tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px;
+            border-radius: var(--border-radius-full);
+            margin-bottom: 30px;
+            border: 1px solid var(--color-border);
+        }
+
+        .login-tab-btn {
+            flex: 1;
+            padding: 10px;
+            background: transparent;
+            border: none;
+            color: var(--color-text-muted);
+            font-family: var(--font-family);
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            border-radius: var(--border-radius-full);
+            transition: var(--transition);
+            text-align: center;
+        }
+
+        .login-tab-btn.active {
+            background: var(--color-primary);
+            color: var(--color-text-main);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .login-form-container {
+            position: relative;
+            overflow: hidden;
+            height: auto;
+        }
+
+        .form-section {
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease;
+        }
+
+        .form-section.hidden {
+            display: none;
+            opacity: 0;
+            transform: translateX(20px);
+        }
+
+        .form-section.active {
+            display: block;
+            opacity: 1;
+            transform: translateX(0);
+            animation: slideInForm 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        @keyframes slideInForm {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .input-group-login {
+            margin-bottom: 24px;
+        }
+
+        .input-group-login label {
+            display: block;
+            color: var(--color-text-muted);
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .input-field-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-field-wrapper i {
+            position: absolute;
+            left: 16px;
+            color: var(--color-text-muted);
+        }
+
+        .input-field-wrapper .input-prefix {
+            position: absolute;
+            left: 16px;
+            color: var(--color-text-muted);
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .login-input {
+            width: 100%;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+            color: var(--color-text-main);
+            font-family: var(--font-family);
+            font-size: 0.95rem;
+            transition: var(--transition);
+        }
+
+        .login-input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            background: rgba(255, 255, 255, 0.06);
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
+        }
+
+        .login-input-phone {
+            padding-left: 70px;
+        }
+
+        .login-input-text {
+            padding-left: 45px;
+        }
+
+        .divider-login {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            color: var(--color-text-muted);
+            margin: 25px 0;
+            font-size: 0.85rem;
+        }
+
+        .divider-login::before, .divider-login::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .divider-login:not(:empty)::before {
+            margin-right: 15px;
+        }
+
+        .divider-login:not(:empty)::after {
+            margin-left: 15px;
+        }
+
+        .social-login-btn {
+            background: transparent;
+            border: 1px solid var(--color-border);
+            color: var(--color-text-main);
+            width: 100%;
+            padding: 12px;
+            border-radius: var(--border-radius-full);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .social-login-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--color-primary);
+        }
+
+        .btn-loading {
+            position: relative;
+            color: transparent !important;
+            pointer-events: none;
+        }
+
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            top: 50%;
+            left: 50%;
+            margin-top: -10px;
+            margin-left: -10px;
+            border: 2px solid var(--color-text-main);
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="login-page">
+    <div class="login-bg"></div>
+
+    <div class="login-card glass-panel">
+        <a href="index.html" class="login-logo">
+            <i class="fa-solid fa-location-arrow"></i> SafariMove
+        </a>
+
+        <div class="login-tabs">
+            <button class="login-tab-btn active" id="tabLogin" onclick="switchTab('login')">Log In</button>
+            <button class="login-tab-btn" id="tabSignup" onclick="switchTab('signup')">Sign Up</button>
+        </div>
+
+        <div class="login-form-container">
+            <!-- LOG IN FORM -->
+            <form id="formLogin" class="form-section active" onsubmit="handleLoginSubmit(event)">
+                <div class="input-group-login">
+                    <label for="phoneLogin">Phone Number</label>
+                    <div class="input-field-wrapper">
+                        <span class="input-prefix">🇹🇿 +255</span>
+                        <input type="tel" id="phoneLogin" class="login-input login-input-phone" placeholder="712 345 678" required autocomplete="tel">
+                    </div>
+                </div>
+
+                <button type="submit" id="btnLogin" class="btn btn-primary btn-block btn-lg">Log In</button>
+            </form>
+
+            <!-- SIGN UP FORM -->
+            <form id="formSignup" class="form-section hidden" onsubmit="handleSignupSubmit(event)">
+                <div class="input-group-login">
+                    <label for="nameSignup">Full Name</label>
+                    <div class="input-field-wrapper">
+                        <i class="fa-solid fa-user"></i>
+                        <input type="text" id="nameSignup" class="login-input login-input-text" placeholder="John Doe" required autocomplete="name">
+                    </div>
+                </div>
+
+                <div class="input-group-login">
+                    <label for="phoneSignup">Phone Number</label>
+                    <div class="input-field-wrapper">
+                        <span class="input-prefix">🇹🇿 +255</span>
+                        <input type="tel" id="phoneSignup" class="login-input login-input-phone" placeholder="712 345 678" required autocomplete="tel">
+                    </div>
+                </div>
+
+                <div class="input-group-login">
+                    <label for="emailSignup">Email Address</label>
+                    <div class="input-field-wrapper">
+                        <i class="fa-solid fa-envelope"></i>
+                        <input type="email" id="emailSignup" class="login-input login-input-text" placeholder="john@example.com" required autocomplete="email">
+                    </div>
+                </div>
+
+                <button type="submit" id="btnSignup" class="btn btn-primary btn-block btn-lg">Create Account</button>
+            </form>
+        </div>
+
+        <div class="divider-login">or</div>
+
+        <button class="social-login-btn" onclick="showToast('Google integration is disabled in sandbox mode.', 'info')">
+            <i class="fa-brands fa-google"></i> Continue with Google
+        </button>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('signup') === 'true') {
+                switchTab('signup');
+            }
+        });
+
+        function switchTab(type) {
+            const tabLogin = document.getElementById('tabLogin');
+            const tabSignup = document.getElementById('tabSignup');
+            const formLogin = document.getElementById('formLogin');
+            const formSignup = document.getElementById('formSignup');
+
+            if (type === 'login') {
+                tabLogin.classList.add('active');
+                tabSignup.classList.remove('active');
+                formLogin.classList.remove('hidden');
+                formLogin.classList.add('active');
+                formSignup.classList.remove('active');
+                formSignup.classList.add('hidden');
+            } else {
+                tabLogin.classList.remove('active');
+                tabSignup.classList.add('active');
+                formLogin.classList.remove('active');
+                formLogin.classList.add('hidden');
+                formSignup.classList.remove('hidden');
+                formSignup.classList.add('active');
+            }
+        }
+
+        // Clean phone input helper
+        function cleanPhoneNumber(phoneInput) {
+            let val = phoneInput.trim();
+            // Remove +255 if they typed it
+            val = val.replace(/^\+255/, '');
+            // Remove leading zero(s)
+            val = val.replace(/^0+/, '');
+            // Remove spaces, hyphens, parentheses
+            val = val.replace(/[\s\-\(\)]/g, '');
+            
+            if (!/^[1-9]\d{8}$/.test(val)) {
+                return null;
+            }
+            return '+255' + val;
+        }
+
+        async function handleLoginSubmit(e) {
+            e.preventDefault();
+            const phoneInput = document.getElementById('phoneLogin').value;
+            const phone = cleanPhoneNumber(phoneInput);
+            
+            if (!phone) {
+                showToast('Please enter a valid Tanzanian phone number (e.g. 712 345 678)', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('btnLogin');
+            btn.classList.add('btn-loading');
+
+            try {
+                const response = await fetch('/api/users/auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    localStorage.setItem('safarimove_user', JSON.stringify(data.user));
+                    showToast('Log in successful!', 'success');
+                    
+                    setTimeout(() => {
+                        redirectUser();
+                    }, 1000);
+                } else {
+                    const err = await response.json();
+                    showToast(err.error || 'Failed to log in', 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Server connection error. Is the server running?', 'error');
+            } finally {
+                btn.classList.remove('btn-loading');
+            }
+        }
+
+        async function handleSignupSubmit(e) {
+            e.preventDefault();
+            const name = document.getElementById('nameSignup').value.trim();
+            const phoneInput = document.getElementById('phoneSignup').value;
+            const email = document.getElementById('emailSignup').value.trim();
+            
+            const phone = cleanPhoneNumber(phoneInput);
+            if (!phone) {
+                showToast('Please enter a valid Tanzanian phone number (e.g. 712 345 678)', 'error');
+                return;
+            }
+
+            if (!name) {
+                showToast('Please enter your full name', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('btnSignup');
+            btn.classList.add('btn-loading');
+
+            try {
+                const response = await fetch('/api/users/auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone, name, email })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    localStorage.setItem('safarimove_user', JSON.stringify(data.user));
+                    showToast('Account created successfully! Welcome Promo of TZS 100,000 added.', 'success');
+                    
+                    setTimeout(() => {
+                        redirectUser();
+                    }, 1500);
+                } else {
+                    const err = await response.json();
+                    showToast(err.error || 'Failed to create account', 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Server connection error. Is the server running?', 'error');
+            } finally {
+                btn.classList.remove('btn-loading');
+            }
+        }
+
+        function redirectUser() {
+            const redirectHash = sessionStorage.getItem('safarimove_redirect_hash');
+            if (redirectHash) {
+                sessionStorage.removeItem('safarimove_redirect_hash');
+                window.location.href = 'dashboard.html' + redirectHash;
+            } else {
+                window.location.href = 'dashboard.html';
+            }
+        }
+    </script>
+</body>
+</html>

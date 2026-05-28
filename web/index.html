@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafariMove | Go anywhere, get anything in Tanzania</title>
+    <meta name="description" content="SafariMove is your unified urban mobility platform. Ride, send packages, use transit, and pay with ease in Tanzania.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <!-- Leaflet CSS for Maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .hero-visual {
+            height: 500px;
+            position: relative;
+        }
+        #mapView {
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 2px solid var(--color-border);
+        }
+        .ride-option-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .ride-option-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--color-primary);
+        }
+        .ride-option-card.selected {
+            background: var(--color-primary-light);
+            border-color: var(--color-primary);
+            box-shadow: var(--shadow-glow);
+        }
+        .ride-option-card i {
+            font-size: 1.5rem;
+            width: 40px;
+            text-align: center;
+        }
+        .ride-option-details {
+            flex-grow: 1;
+            margin-left: 10px;
+        }
+        .ride-option-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        .ride-option-sub {
+            font-size: 0.75rem;
+            color: var(--color-text-muted);
+        }
+        .ride-option-price {
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--color-text-main);
+        }
+        .suggestions-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background: #1e293b;
+            border: 1px solid var(--color-border);
+            border-top: none;
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: var(--shadow-lg);
+        }
+        .suggestion-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: var(--color-text-muted);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            transition: var(--transition);
+        }
+        .suggestion-item:hover {
+            background: rgba(255,255,255,0.1);
+            color: var(--color-text-main);
+        }
+    </style>
+</head>
+<body class="landing-page">
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="index.html" class="logo">
+                <i class="fa-solid fa-location-arrow"></i> SafariMove
+            </a>
+            <div class="nav-links">
+                <a href="#services">Ride</a>
+                <a href="#services">Drive</a>
+                <a href="#services">Delivery</a>
+                <a href="dashboard.html" class="nav-item-dashboard">Dashboard</a>
+            </div>
+            <div class="nav-actions" id="navAuthActions">
+                <a href="login.html" class="btn btn-text" style="display: inline-block;">Log in</a>
+                <a href="login.html?signup=true" class="btn btn-primary" style="display: inline-block;">Sign up</a>
+            </div>
+            <button class="mobile-menu-btn"><i class="fa-solid fa-bars"></i></button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="hero">
+        <div class="hero-bg"></div>
+        <div class="container hero-container">
+            <div class="hero-content">
+                <h1 class="hero-title">Go anywhere with <br>SafariMove.</h1>
+                <p class="hero-subtitle">Unified urban mobility in Tanzania. Request a ride, dispatch deliveries, or take a matatu using digital fares.</p>
+                
+                <div class="hero-actions-card glass-panel">
+                    <div class="action-tabs">
+                        <button class="tab-btn active" data-target="ride-form" onclick="resetForm('ride')"><i class="fa-solid fa-car"></i> Ride</button>
+                        <button class="tab-btn" data-target="delivery-form" onclick="resetForm('delivery')"><i class="fa-solid fa-box"></i> Delivery</button>
+                        <button class="tab-btn" data-target="transit-form" onclick="resetForm('transit')"><i class="fa-solid fa-bus"></i> Transit</button>
+                    </div>
+                    
+                    <!-- TAB 1: RIDE -->
+                    <div class="tab-content active" id="ride-form">
+                        <h3 class="tab-title">Request a ride now</h3>
+                        <div class="input-group" style="position:relative;">
+                            <i class="fa-solid fa-circle-dot input-icon text-primary"></i>
+                            <input type="text" id="pickupSearch" placeholder="Enter pickup location (e.g. Posta)" class="form-control" autocomplete="off" oninput="debounceSearch(this, 'pickupSuggestions')">
+                            <div id="pickupSuggestions" class="suggestions-dropdown" style="display:none;"></div>
+                        </div>
+                        <div class="input-group" style="position:relative;">
+                            <i class="fa-solid fa-location-dot input-icon text-accent"></i>
+                            <input type="text" id="dropoffSearch" placeholder="Enter destination (e.g. Mwenge)" class="form-control" autocomplete="off" oninput="debounceSearch(this, 'dropoffSuggestions')">
+                            <div id="dropoffSuggestions" class="suggestions-dropdown" style="display:none;"></div>
+                        </div>
+                        
+                        <div id="rideOptionsSection" style="display:none; margin-bottom:15px;">
+                            <p class="text-muted mb-2" style="font-size:0.85rem;" id="routeStatsDisplay">Calculating route...</p>
+                            <div class="ride-options-list" id="rideOptionsList"></div>
+                        </div>
+
+                        <div class="form-actions row">
+                            <button id="mainRideBtn" class="btn btn-primary btn-block btn-lg" onclick="handleRideSubmit()">Find Ride Options</button>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: DELIVERY -->
+                    <div class="tab-content" id="delivery-form" style="display:none;">
+                        <h3 class="tab-title">Send a package</h3>
+                        <div class="input-group" style="position:relative;">
+                            <i class="fa-solid fa-box input-icon"></i>
+                            <input type="text" id="delPickupSearch" placeholder="Pickup address" class="form-control" autocomplete="off" oninput="debounceSearch(this, 'delPickupSuggestions')">
+                            <div id="delPickupSuggestions" class="suggestions-dropdown" style="display:none;"></div>
+                        </div>
+                        <div class="input-group" style="position:relative;">
+                            <i class="fa-solid fa-flag-checkered input-icon"></i>
+                            <input type="text" id="delDropoffSearch" placeholder="Dropoff address" class="form-control" autocomplete="off" oninput="debounceSearch(this, 'delDropoffSuggestions')">
+                            <div id="delDropoffSuggestions" class="suggestions-dropdown" style="display:none;"></div>
+                        </div>
+                        
+                        <div id="deliveryOptionsSection" style="display:none; margin-bottom:15px;">
+                            <p class="text-muted mb-2" style="font-size:0.85rem;" id="delRouteStatsDisplay">Calculating route...</p>
+                            <div class="ride-options-list" id="deliveryOptionsList"></div>
+                        </div>
+
+                        <button id="mainDelBtn" class="btn btn-primary btn-block btn-lg" onclick="handleDeliverySubmit()">Get Estimate</button>
+                    </div>
+
+                    <!-- TAB 3: TRANSIT -->
+                    <div class="tab-content" id="transit-form" style="display:none;">
+                        <h3 class="tab-title">Public Transit</h3>
+                        <p class="text-muted mb-3">Check local commuter transit routes and buy tickets.</p>
+                        <div class="input-group">
+                            <i class="fa-solid fa-route input-icon"></i>
+                            <input type="text" id="transitDestination" placeholder="Where to?" class="form-control" onclick="window.location.href='dashboard.html#transit'">
+                        </div>
+                        <button class="btn btn-primary btn-block btn-lg" onclick="window.location.href='dashboard.html#transit'">Find Routes</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="hero-visual">
+                <!-- Leaflet map embedded directly into landing page -->
+                <div id="mapView" style="width: 100%; height: 100%; border-radius: var(--border-radius-lg); z-index: 1;"></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Features Section -->
+    <section id="services" class="section bg-light">
+        <div class="container">
+            <div class="section-header text-center">
+                <h2 class="section-title">One platform for everything</h2>
+                <p class="section-subtitle">Seamlessly switch between riding, driving, sending, and paying.</p>
+            </div>
+            
+            <div class="grid grid-3">
+                <div class="feature-card glass-panel">
+                    <div class="feature-icon bg-primary-light text-primary">
+                        <i class="fa-solid fa-car-side"></i>
+                    </div>
+                    <h3>Ride-Hailing</h3>
+                    <p>Get a reliable ride in minutes. Transparent pricing, vetted drivers, and real-time tracking.</p>
+                    <a href="#" class="feature-link">Learn more <i class="fa-solid fa-arrow-right"></i></a>
+                </div>
+                
+                <div class="feature-card glass-panel">
+                    <div class="feature-icon bg-accent-light text-accent">
+                        <i class="fa-solid fa-box-open"></i>
+                    </div>
+                    <h3>Delivery</h3>
+                    <p>Send packages across town instantly. Track your delivery from pickup to dropoff.</p>
+                    <a href="#" class="feature-link">Learn more <i class="fa-solid fa-arrow-right"></i></a>
+                </div>
+                
+                <div class="feature-card glass-panel">
+                    <div class="feature-icon bg-success-light text-success">
+                        <i class="fa-solid fa-wallet"></i>
+                    </div>
+                    <h3>Integrated Payments</h3>
+                    <p>Pay with M-Pesa or digital wallet. Secure transactions powered by Africa's Talking.</p>
+                    <a href="#" class="feature-link">Learn more <i class="fa-solid fa-arrow-right"></i></a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Offline Integration Section -->
+    <section class="section bg-dark text-white">
+        <div class="container">
+            <div class="split-layout align-center">
+                <div class="content-side">
+                    <h2 class="section-title">No internet? No problem.</h2>
+                    <p class="section-subtitle text-gray-300">SafariMove works offline seamlessly via Africa's Talking Sandbox integration. Accessible on any feature phone.</p>
+                    
+                    <div class="offline-features">
+                        <div class="offline-item">
+                            <div class="offline-icon"><i class="fa-solid fa-hashtag"></i></div>
+                            <div>
+                                <h4>USSD Access</h4>
+                                <p>Dial <strong>*384*811#</strong> to book rides, check transit routes, or view balance.</p>
+                            </div>
+                        </div>
+                        <div class="offline-item">
+                            <div class="offline-icon"><i class="fa-solid fa-comment-sms"></i></div>
+                            <div>
+                                <h4>SMS Alerts</h4>
+                                <p>Receive trip confirmations, driver details, and receipts via SMS.</p>
+                            </div>
+                        </div>
+                        <div class="offline-item">
+                            <div class="offline-icon"><i class="fa-solid fa-gift"></i></div>
+                            <div>
+                                <h4>Airtime Rewards</h4>
+                                <p>Earn mobile airtime automatically after completing 5 rides.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <a href="dashboard.html#sandbox" class="btn btn-primary btn-lg">Explore Sandbox Integration</a>
+                    </div>
+                </div>
+                <div class="visual-side text-center">
+                    <div class="phone-mockup">
+                        <div class="phone-screen ussd-demo">
+                            <div class="ussd-header">SafariMove</div>
+                            <div class="ussd-content">
+                                Welcome to SafariMove<br>
+                                1. Book a Ride<br>
+                                2. Send Package<br>
+                                3. Transit Routes<br>
+                                4. My Balance<br>
+                                5. Earn Airtime
+                            </div>
+                            <div class="ussd-input">
+                                <span>1</span>
+                                <button>SEND</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-top">
+                <div class="footer-brand">
+                    <a href="#" class="logo">
+                        <i class="fa-solid fa-location-arrow"></i> SafariMove
+                    </a>
+                    <p class="mt-2 text-muted">The unified urban mobility platform for Africa.</p>
+                </div>
+                <div class="footer-links">
+                    <div class="link-group">
+                        <h4>Company</h4>
+                        <a href="#">About Us</a>
+                        <a href="#">Careers</a>
+                        <a href="#">Investors</a>
+                    </div>
+                    <div class="link-group">
+                        <h4>Products</h4>
+                        <a href="#">Ride</a>
+                        <a href="#">Drive</a>
+                        <a href="#">Deliver</a>
+                        <a href="#">Business</a>
+                    </div>
+                    <div class="link-group">
+                        <h4>Integrations</h4>
+                        <a href="#">Africa's Talking API</a>
+                        <a href="#">n8n Workflows</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 SafariMove. All rights reserved.</p>
+                <div class="social-links">
+                    <a href="#"><i class="fa-brands fa-twitter"></i></a>
+                    <a href="#"><i class="fa-brands fa-linkedin"></i></a>
+                    <a href="#"><i class="fa-brands fa-github"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Login Modal -->
+    <div class="modal-overlay" id="loginModal">
+        <div class="modal glass-panel">
+            <div class="modal-header">
+                <button class="close-btn" onclick="closeLoginModal()"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <h2 class="text-center mb-4" style="color:white;">Welcome back</h2>
+                <div class="form-group" style="margin-bottom:20px;">
+                    <label style="color:var(--color-text-muted); display:block; margin-bottom:8px;">Enter your phone number</label>
+                    <div class="input-group" style="position:relative;">
+                        <span class="input-prefix" style="position:absolute; left:16px; top:50%; transform:translateY(-50%); color:var(--color-text-muted);">+255</span>
+                        <input type="tel" class="form-control" placeholder="712 345 678" id="loginPhone" style="padding-left:65px;">
+                    </div>
+                </div>
+                <button class="btn btn-primary btn-block btn-lg" onclick="submitLogin()">Continue</button>
+                <div class="divider mt-4 mb-4"><span>or</span></div>
+                <button class="btn btn-outline btn-block mb-2">
+                    <i class="fa-brands fa-google mr-2"></i> Continue with Google
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="js/app.js"></script>
+    <script src="js/map.js"></script>
+    <script>
+        let selectedPickup = null;
+        let selectedDropoff = null;
+        let searchTimeout = null;
+        let calculatedRouteData = null;
+        let selectedRideTier = 'saver';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check auth status
+            const userStr = localStorage.getItem('safarimove_user');
+            if (userStr) {
+                const user = JSON.parse(userStr);
+                document.getElementById('navAuthActions').innerHTML = `
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <span style="font-size:0.9rem;">Mambo, <b>${user.name || user.phone}</b></span>
+                        <a href="dashboard.html" class="btn btn-primary">Go to Dashboard</a>
+                    </div>
+                `;
+            }
+            // Init map on landing
+            setTimeout(initMap, 500);
+        });
+
+        // Tab selection switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+                
+                btn.classList.add('active');
+                document.getElementById(btn.dataset.target).style.display = 'block';
+                if (map) {
+                    map.invalidateSize();
+                }
+            });
+        });
+
+        function resetForm(type) {
+            clearRoute();
+            selectedPickup = null;
+            selectedDropoff = null;
+            calculatedRouteData = null;
+            
+            if (type === 'ride') {
+                document.getElementById('pickupSearch').value = '';
+                document.getElementById('dropoffSearch').value = '';
+                document.getElementById('rideOptionsSection').style.display = 'none';
+                document.getElementById('mainRideBtn').innerText = 'Find Ride Options';
+            } else if (type === 'delivery') {
+                document.getElementById('delPickupSearch').value = '';
+                document.getElementById('delDropoffSearch').value = '';
+                document.getElementById('deliveryOptionsSection').style.display = 'none';
+                document.getElementById('mainDelBtn').innerText = 'Get Estimate';
+            }
+        }
+
+        // Suggestions search autocompletion
+        function debounceSearch(inputEl, dropdownId) {
+            const val = inputEl.value.trim();
+            const dropdown = document.getElementById(dropdownId);
+            
+            clearTimeout(searchTimeout);
+            if (!val || val.length < 3) {
+                dropdown.style.display = 'none';
+                return;
+            }
+
+            searchTimeout = setTimeout(async () => {
+                const results = await searchTanzaniaLocation(val);
+                if (results && results.length > 0) {
+                    dropdown.innerHTML = results.map(item => `
+                        <div class="suggestion-item" onclick="selectSuggestion('${dropdownId}', '${inputEl.id}', '${item.display_name.replace(/'/g, "\\'")}', ${item.lat}, ${item.lon})">
+                            <i class="fa-solid fa-location-dot" style="margin-right:8px;"></i>${item.display_name}
+                        </div>
+                    `).join('');
+                    dropdown.style.display = 'block';
+                } else {
+                    dropdown.style.display = 'none';
+                }
+            }, 300);
+        }
+
+        function selectSuggestion(dropdownId, inputId, displayName, lat, lon) {
+            document.getElementById(inputId).value = displayName;
+            document.getElementById(dropdownId).style.display = 'none';
+
+            const coord = [lat, lon];
+            if (inputId.includes('pickup') || inputId.includes('Pickup')) {
+                selectedPickup = coord;
+            } else {
+                selectedDropoff = coord;
+            }
+
+            if (selectedPickup && selectedDropoff) {
+                processRouteCalculation(inputId.includes('del') ? 'delivery' : 'ride');
+            } else {
+                map.setView(coord, 14);
+                addUserMarker(lat, lon);
+            }
+        }
+
+        async function processRouteCalculation(type) {
+            const start = selectedPickup;
+            const end = selectedDropoff;
+            
+            const mainBtnId = type === 'ride' ? 'mainRideBtn' : 'mainDelBtn';
+            const btn = document.getElementById(mainBtnId);
+            btn.innerText = 'Calculating...';
+            btn.disabled = true;
+
+            const routeInfo = await plotRoute(start, end);
+            calculatedRouteData = routeInfo;
+
+            btn.disabled = false;
+
+            if (type === 'ride') {
+                document.getElementById('routeStatsDisplay').innerText = `Distance: ${routeInfo.distance} km • Duration: ${routeInfo.duration} mins`;
+                
+                const motoPrice = Math.max(1500, Math.round(routeInfo.distance * 400));
+                const saverPrice = Math.max(3000, Math.round(routeInfo.distance * 1000));
+                const comfortPrice = Math.max(5000, Math.round(routeInfo.distance * 1800));
+
+                const optionsList = document.getElementById('rideOptionsList');
+                optionsList.innerHTML = `
+                    <div class="ride-option-card selected" data-tier="saver" onclick="selectRideTier(this, 'saver')">
+                        <i class="fa-solid fa-car text-primary"></i>
+                        <div class="ride-option-details">
+                            <div class="ride-option-title">SafariSaver</div>
+                            <div class="ride-option-sub">Best value everyday rides • 4 min ETA</div>
+                        </div>
+                        <div class="ride-option-price">TZS ${saverPrice.toLocaleString()}</div>
+                    </div>
+                    <div class="ride-option-card" data-tier="moto" onclick="selectRideTier(this, 'moto')">
+                        <i class="fa-solid fa-motorcycle text-accent"></i>
+                        <div class="ride-option-details">
+                            <div class="ride-option-title">SafariMoto</div>
+                            <div class="ride-option-sub">Beating traffic on boda-boda • 2 min ETA</div>
+                        </div>
+                        <div class="ride-option-price">TZS ${motoPrice.toLocaleString()}</div>
+                    </div>
+                    <div class="ride-option-card" data-tier="comfort" onclick="selectRideTier(this, 'comfort')">
+                        <i class="fa-solid fa-couch text-warning"></i>
+                        <div class="ride-option-details">
+                            <div class="ride-option-title">SafariComfort</div>
+                            <div class="ride-option-sub">Premium spacious sedans • 3 min ETA</div>
+                        </div>
+                        <div class="ride-option-price">TZS ${comfortPrice.toLocaleString()}</div>
+                    </div>
+                `;
+
+                document.getElementById('rideOptionsSection').style.display = 'block';
+                btn.innerText = 'Request SafariSaver';
+            } else {
+                document.getElementById('delRouteStatsDisplay').innerText = `Distance: ${routeInfo.distance} km • Delivery Route Established`;
+                
+                const courierPrice = Math.max(2500, Math.round(routeInfo.distance * 900));
+                const cargoPrice = Math.max(15000, Math.round(routeInfo.distance * 3000));
+
+                const optionsList = document.getElementById('deliveryOptionsList');
+                optionsList.innerHTML = `
+                    <div class="ride-option-card selected" data-tier="courier" onclick="selectRideTier(this, 'courier')">
+                        <i class="fa-solid fa-motorcycle text-accent"></i>
+                        <div class="ride-option-details">
+                            <div class="ride-option-title">Standard Courier</div>
+                            <div class="ride-option-sub">Small packages, documents, envelope</div>
+                        </div>
+                        <div class="ride-option-price">TZS ${courierPrice.toLocaleString()}</div>
+                    </div>
+                    <div class="ride-option-card" data-tier="cargo" onclick="selectRideTier(this, 'cargo')">
+                        <i class="fa-solid fa-truck-moving text-success"></i>
+                        <div class="ride-option-details">
+                            <div class="ride-option-title">SafariCargo</div>
+                            <div class="ride-option-sub">Heavy moving, furniture, large boxes</div>
+                        </div>
+                        <div class="ride-option-price">TZS ${cargoPrice.toLocaleString()}</div>
+                    </div>
+                `;
+
+                document.getElementById('deliveryOptionsSection').style.display = 'block';
+                btn.innerText = 'Dispatch Standard Courier';
+            }
+        }
+
+        function selectRideTier(el, tier) {
+            document.querySelectorAll('.ride-option-card').forEach(card => card.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedRideTier = tier;
+            
+            const isDel = tier === 'courier' || tier === 'cargo';
+            const btnId = isDel ? 'mainDelBtn' : 'mainRideBtn';
+            const btnText = isDel ? `Dispatch ${el.querySelector('.ride-option-title').innerText}` : `Request ${el.querySelector('.ride-option-title').innerText}`;
+            document.getElementById(btnId).innerText = btnText;
+        }
+
+        function handleRideSubmit() {
+            if (!selectedPickup || !selectedDropoff || !calculatedRouteData) {
+                showToast('Please enter and select pickup and dropoff points first', 'info');
+                return;
+            }
+            proceedToBooking('ride');
+        }
+
+        function handleDeliverySubmit() {
+            if (!selectedPickup || !selectedDropoff || !calculatedRouteData) {
+                showToast('Please enter and select pickup and dropoff points first', 'info');
+                return;
+            }
+            proceedToBooking('delivery');
+        }
+
+        function proceedToBooking(type) {
+            // Save selected trip parameters in sessionStorage for the dashboard
+            const fareStr = document.querySelector('.ride-option-card.selected .ride-option-price').innerText;
+            const fare = parseInt(fareStr.replace(/[^0-9]/g, ''));
+            const title = document.querySelector('.ride-option-card.selected .ride-option-title').innerText;
+
+            const tripPayload = {
+                type: type,
+                fare: fare,
+                tier: selectedRideTier,
+                tierTitle: title,
+                distance: calculatedRouteData.distance,
+                duration: calculatedRouteData.duration,
+                pickupName: type === 'ride' ? document.getElementById('pickupSearch').value : document.getElementById('delPickupSearch').value,
+                dropoffName: type === 'ride' ? document.getElementById('dropoffSearch').value : document.getElementById('delDropoffSearch').value,
+                pickupCoords: selectedPickup,
+                dropoffCoords: selectedDropoff,
+                routeCoordinates: calculatedRouteData.coordinates
+            };
+            
+            sessionStorage.setItem('safarimove_pending_trip', JSON.stringify(tripPayload));
+
+            // Check Login
+            const userStr = localStorage.getItem('safarimove_user');
+            if (!userStr) {
+                showToast('Login required to complete booking. Redirecting...', 'info');
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 1200);
+            } else {
+                window.location.href = 'dashboard.html';
+            }
+        }
+
+        function openLoginModal() {
+            document.getElementById('loginModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLoginModal() {
+            document.getElementById('loginModal').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        async function submitLogin() {
+            const phoneInput = document.getElementById('loginPhone').value.trim();
+            if (!phoneInput) {
+                showToast('Please enter your phone number', 'error');
+                return;
+            }
+
+            // Clean phone format for Tanzania (+255)
+            const cleanedPhone = phoneInput.replace(/^0+/, '').replace(/\s+/g, '');
+            const phone = '+255' + cleanedPhone;
+
+            try {
+                const response = await fetch('/api/users/auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    localStorage.setItem('safarimove_user', JSON.stringify(data.user));
+                    showToast('Login successful!', 'success');
+                    
+                    // If a trip is pending, go straight to dashboard to trigger it
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 1000);
+                } else {
+                    const error = await response.json();
+                    showToast(error.error || 'Login failed', 'error');
+                }
+            } catch (error) {
+                console.error(error);
+                showToast('Network error. Is the server running?', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

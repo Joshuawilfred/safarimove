@@ -1,0 +1,100 @@
+{
+  "name": "SafariMove - Payment Processor",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "safarimove-payments",
+        "options": {}
+      },
+      "id": "1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [ 250, 300 ],
+      "webhookId": "safarimove-payments"
+    },
+    {
+      "parameters": {
+        "url": "https://payments.sandbox.africastalking.com/mobile/checkout/request",
+        "method": "POST",
+        "authentication": "headerAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "username",
+              "value": "sandbox"
+            },
+            {
+              "name": "productName",
+              "value": "SafariMove"
+            },
+            {
+              "name": "phoneNumber",
+              "value": "={{ $json.body.phoneNumber }}"
+            },
+            {
+              "name": "currencyCode",
+              "value": "={{ $json.body.currencyCode || 'TZS' }}"
+            },
+            {
+              "name": "amount",
+              "value": "={{ $json.body.amount || 50 }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2",
+      "name": "Initiate STK Push HTTP",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [ 500, 300 ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "2",
+          "name": "Africa's Talking API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "Payment STK Push initiated successfully",
+        "options": {}
+      },
+      "id": "3",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [ 750, 300 ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Initiate STK Push HTTP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Initiate STK Push HTTP": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {}
+}

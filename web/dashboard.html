@@ -1,0 +1,1976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafariMove Dashboard — Premium Mobility Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Leaflet CSS for Maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <style>
+        /* Modern Side-by-Side Premium Dashboard Styles */
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            font-family: var(--font-family);
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: 250px;
+            background-color: #0b0f19;
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 24px 0;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+        .sidebar-logo {
+            padding: 0 24px 32px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .nav-menu {
+            flex: 1;
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 14px 24px;
+            color: #94a3b8;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+        .nav-item:hover {
+            color: #ffffff;
+            background-color: rgba(255, 255, 255, 0.03);
+        }
+        .nav-item.active {
+            color: #3b82f6;
+            background-color: rgba(59, 130, 246, 0.08);
+            border-right: 3px solid #3b82f6;
+        }
+        .nav-item i {
+            width: 28px;
+            font-size: 1.1rem;
+        }
+
+        /* Middle Control Pane */
+        .control-pane {
+            width: 440px;
+            background-color: #0f172a;
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            overflow-y: auto;
+            position: relative;
+            padding: 30px;
+        }
+
+        /* Scrollbar styles for control pane */
+        .control-pane::-webkit-scrollbar {
+            width: 6px;
+        }
+        .control-pane::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .control-pane::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+        }
+
+        /* Right Map View */
+        #mapView {
+            flex: 1;
+            height: 100%;
+            z-index: 1;
+            background-color: #1e293b;
+        }
+
+        /* Profile Header */
+        .profile-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: var(--border-radius);
+            margin-bottom: 24px;
+        }
+        .profile-info {
+            flex-grow: 1;
+        }
+        .profile-name {
+            font-weight: 600;
+            font-size: 1rem;
+            color: #ffffff;
+        }
+        .profile-balance {
+            font-size: 0.85rem;
+            color: #3b82f6;
+            margin-top: 2px;
+            font-weight: 500;
+        }
+
+        /* View Panels */
+        .view-panel {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+        }
+        .view-panel.active {
+            display: flex;
+        }
+        .view-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 8px;
+        }
+        .view-subtitle {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            margin-bottom: 24px;
+        }
+
+        /* Stat Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-box {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 16px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .stat-box:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(255, 255, 255, 0.08);
+            transform: translateY(-2px);
+        }
+        .stat-label {
+            color: #94a3b8;
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .stat-value {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-top: 8px;
+        }
+
+        /* Suggestions Autocomplete */
+        .suggestions-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background-color: #1e293b;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            z-index: 1000;
+            max-height: 200px;
+            overflow-y: auto;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            margin-top: 4px;
+        }
+        .suggestion-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            color: #f8fafc;
+            transition: background 0.2s;
+            font-size: 0.85rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .suggestion-item:hover {
+            background-color: rgba(59, 130, 246, 0.2);
+        }
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Ride Tiers */
+        .ride-options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 16px 0;
+        }
+        .ride-option-card {
+            display: flex;
+            align-items: center;
+            padding: 14px;
+            background-color: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .ride-option-card:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        .ride-option-card.selected {
+            background-color: rgba(59, 130, 246, 0.1);
+            border-color: #3b82f6;
+        }
+        .ride-option-card i {
+            font-size: 1.3rem;
+            margin-right: 12px;
+            width: 24px;
+            text-align: center;
+        }
+        .ride-option-details {
+            flex-grow: 1;
+        }
+        .ride-option-title {
+            font-weight: 600;
+            color: #ffffff;
+            font-size: 0.95rem;
+        }
+        .ride-option-sub {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-top: 1px;
+        }
+        .ride-option-price {
+            font-weight: 700;
+            color: #ffffff;
+            font-size: 1rem;
+        }
+
+        /* Tracking Card UI */
+        .tracking-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            margin-top: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .pulse-loader {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin: 20px 0;
+        }
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #3b82f6;
+            animation: pulse-dot-anim 1.4s infinite ease-in-out both;
+        }
+        .pulse-dot:nth-child(1) { animation-delay: -0.32s; }
+        .pulse-dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes pulse-dot-anim {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            transition: width 0.4s ease;
+        }
+        
+        /* Transaction History Scroll */
+        .tx-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 250px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+        .tx-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: rgba(255,255,255,0.01);
+            border: 1px solid rgba(255,255,255,0.03);
+            border-radius: 8px;
+            font-size: 0.85rem;
+        }
+        .tx-left {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .tx-type {
+            font-weight: 600;
+            color: #ffffff;
+            text-transform: capitalize;
+        }
+        .tx-date {
+            color: #64748b;
+            font-size: 0.75rem;
+        }
+        .tx-amount {
+            font-weight: 700;
+        }
+        .tx-amount.credit { color: #10b981; }
+        .tx-amount.debit { color: #f43f5e; }
+
+        /* Cyber USSD Phone Terminal Mockup */
+        .ussd-phone-container {
+            margin: 0 auto;
+            max-width: 320px;
+            background: #0b0f19;
+            border: 8px solid #1e293b;
+            border-radius: 36px;
+            padding: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+        }
+        .ussd-screen {
+            background-color: #000000;
+            color: #38bdf8;
+            font-family: monospace;
+            padding: 16px;
+            height: 240px;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: inset 0 0 10px rgba(56, 189, 248, 0.3);
+            border: 1px solid rgba(56, 189, 248, 0.15);
+        }
+        .ussd-content {
+            font-size: 0.85rem;
+            line-height: 1.4;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            flex-grow: 1;
+        }
+        .ussd-input-group {
+            display: flex;
+            align-items: center;
+            border-top: 1px solid rgba(56, 189, 248, 0.2);
+            padding-top: 10px;
+            margin-top: 10px;
+            gap: 8px;
+        }
+        .ussd-terminal-prefix {
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        .ussd-input-field {
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid #38bdf8;
+            color: #38bdf8;
+            font-family: monospace;
+            font-size: 0.9rem;
+            outline: none;
+            flex-grow: 1;
+            padding: 2px 0;
+        }
+        .ussd-submit-btn {
+            background: transparent;
+            border: 1px solid #38bdf8;
+            color: #38bdf8;
+            padding: 2px 8px;
+            font-size: 0.75rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: monospace;
+            transition: all 0.2s;
+        }
+        .ussd-submit-btn:hover {
+            background-color: rgba(56, 189, 248, 0.1);
+        }
+
+        /* Form Controls Overrides for Dark Mode */
+        .form-control {
+            background-color: rgba(255, 255, 255, 0.02) !important;
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
+            color: #ffffff !important;
+        }
+        .form-control:focus {
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+        }
+        .btn-primary {
+            background-color: #3b82f6 !important;
+            color: #ffffff !important;
+        }
+        .btn-primary:hover {
+            background-color: #2563eb !important;
+            transform: translateY(-1px);
+        }
+
+        /* Leaflet Marker Styling */
+        .custom-leaflet-icon {
+            z-index: 1000;
+        }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 992px) {
+            body {
+                flex-direction: column;
+                overflow-y: auto;
+            }
+            .sidebar {
+                width: 100%;
+                height: auto;
+                border-right: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            }
+            .control-pane {
+                width: 100%;
+                height: auto;
+                border-right: none;
+            }
+            #mapView {
+                width: 100%;
+                height: 400px;
+                flex-shrink: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <i class="fa-solid fa-location-arrow text-primary"></i> SafariMove
+        </div>
+        <div class="nav-menu">
+            <div class="nav-item active" data-view="dashboardView"><i class="fa-solid fa-chart-line"></i> Dashboard</div>
+            <div class="nav-item" data-view="rideView"><i class="fa-solid fa-car"></i> Ride-Hailing</div>
+            <div class="nav-item" data-view="deliveryView"><i class="fa-solid fa-box"></i> Delivery</div>
+            <div class="nav-item" data-view="transitView"><i class="fa-solid fa-bus"></i> Transit</div>
+            <div class="nav-item" data-view="fleetView"><i class="fa-solid fa-truck-fast"></i> Fleet Mgmt</div>
+            <div class="nav-item" data-view="walletView"><i class="fa-solid fa-wallet"></i> Payments</div>
+            <div class="nav-item" data-view="atSandboxView"><i class="fa-solid fa-tower-cell"></i> AT Sandbox</div>
+        </div>
+        <div class="nav-item" style="margin-top: auto;" onclick="logout()">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i> Log out
+        </div>
+    </aside>
+
+    <!-- Middle Control Pane -->
+    <main class="control-pane">
+        <!-- User Profile Card Header -->
+        <div class="profile-card">
+            <img id="userAvatar" src="https://ui-avatars.com/api/?name=User&background=3b82f6&color=fff" alt="User" style="width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, 0.1);">
+            <div class="profile-info">
+                <div id="userNameDisplay" class="profile-name">Loading...</div>
+                <div id="userBalanceDisplay" class="profile-balance">Balance: TZS 0</div>
+            </div>
+        </div>
+
+        <!-- VIEW: DASHBOARD (HOME) -->
+        <div id="dashboardView" class="view-panel active">
+            <h2 id="welcomeText" class="view-title">Welcome back</h2>
+            <div class="view-subtitle">Urban mobility at your fingertips</div>
+
+            <div class="stats-grid">
+                <div class="stat-box" onclick="switchTab('rideView')">
+                    <div class="stat-label">Request Ride</div>
+                    <div class="stat-value"><i class="fa-solid fa-car text-primary"></i> Ride</div>
+                </div>
+                <div class="stat-box" onclick="switchTab('walletView')">
+                    <div class="stat-label">Wallet Balance</div>
+                    <div class="stat-value" id="dashBalanceDisplay" style="font-size: 1.15rem; color:#10b981;">TZS 0</div>
+                </div>
+            </div>
+
+            <!-- Active Booking Banner -->
+            <div id="activeTripBanner" class="glass-panel" style="display: none; padding: 16px; margin-bottom: 24px; border-left: 4px solid #3b82f6;">
+                <div style="font-weight: 600; font-size: 0.9rem; color: #ffffff; display: flex; align-items: center; justify-content: space-between;">
+                    <span>Active Ride In Progress</span>
+                    <span id="activeTripPercent" class="text-primary">0%</span>
+                </div>
+                <p id="activeTripDesc" style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;"></p>
+                <button class="btn btn-outline" style="padding: 6px 12px; font-size: 0.8rem; margin-top: 10px;" onclick="switchTab('rideView')">Track Live</button>
+            </div>
+
+            <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 12px; color: #ffffff;">Recent Platform Activity</h3>
+            <div class="tx-list" id="dashActivityList">
+                <p style="color: #64748b; font-size: 0.85rem; padding: 10px 0;">No recent activities found.</p>
+            </div>
+        </div>
+
+        <!-- VIEW: RIDE-HAILING -->
+        <div id="rideView" class="view-panel">
+            <h2 class="view-title">Book a Ride</h2>
+            <div class="view-subtitle">Request a dynamic door-to-door ride</div>
+
+            <!-- Booking Section Form -->
+            <div id="rideFormSection">
+                <div class="input-group location-input" style="position: relative;">
+                    <span class="input-icon"><i class="fa-solid fa-circle-dot text-success"></i></span>
+                    <input type="text" id="ridePickup" placeholder="Enter pickup location (Dar es Salaam)" class="form-control" onkeyup="debounceSearch(this, 'ridePickupDropdown')">
+                    <div id="ridePickupDropdown" class="suggestions-dropdown" style="display: none;"></div>
+                </div>
+
+                <div class="input-group location-input" style="position: relative;">
+                    <span class="input-icon"><i class="fa-solid fa-location-dot text-danger"></i></span>
+                    <input type="text" id="rideDropoff" placeholder="Enter destination" class="form-control" onkeyup="debounceSearch(this, 'rideDropoffDropdown')">
+                    <div id="rideDropoffDropdown" class="suggestions-dropdown" style="display: none;"></div>
+                </div>
+
+                <!-- Live Route Estimates Display -->
+                <div id="rideRouteStats" style="display: none; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; font-size: 0.8rem; color: #94a3b8; text-align: center; margin-bottom: 15px;"></div>
+
+                <!-- Tiers Option List -->
+                <div id="rideOptionsSection" style="display: none;">
+                    <h4 style="font-size: 0.85rem; text-transform: uppercase; color: #94a3b8; margin-top: 15px;">Suggested Rides</h4>
+                    <div class="ride-options-list" id="rideTiersList"></div>
+                </div>
+
+                <button class="btn btn-primary btn-block mt-4" id="mainRideBtn" onclick="requestRideBooking()" style="display: none;">Find Ride Options</button>
+            </div>
+
+            <!-- Matchmaking / Live Tracker Section -->
+            <div id="rideTrackingSection" style="display: none;">
+                <div class="tracking-card">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div id="rideTrackingStatusIcon" style="font-size: 1.5rem; color:#3b82f6;">
+                            <i class="fa-solid fa-spinner fa-spin"></i>
+                        </div>
+                        <div>
+                            <h4 id="rideTrackingStatusTitle" style="color: #ffffff; font-size: 1rem; font-weight: 600;">Finding a driver...</h4>
+                            <p id="rideTrackingStatusSub" style="color: #94a3b8; font-size: 0.8rem;">Connecting with nearby vehicles</p>
+                        </div>
+                    </div>
+                    
+                    <div class="progress-bar">
+                        <div class="progress-bar-fill" id="rideProgressBarFill"></div>
+                    </div>
+
+                    <!-- Driver Card -->
+                    <div id="assignedDriverCard" style="display: none; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin-top: 5px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-weight: 600; font-size: 0.9rem; color: #ffffff;" id="driverName">Juma Hamisi</div>
+                                <div style="font-size: 0.75rem; color: #94a3b8;" id="driverVehicle">Toyota Probox • T 123 DKM</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="color: #f59e0b; font-size: 0.85rem;"><i class="fa-solid fa-star"></i> 4.9</div>
+                                <div style="font-size: 0.75rem; color: #3b82f6;" id="driverEtaDisplay">3 mins away</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-secondary btn-block" id="cancelRideBtn" onclick="cancelActiveRide()" style="border: 1px solid rgba(244, 63, 94, 0.2); color:#f43f5e; margin-top: 10px;">Cancel Trip</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: DELIVERY -->
+        <div id="deliveryView" class="view-panel">
+            <h2 class="view-title">Send a Package</h2>
+            <div class="view-subtitle">Instant courier delivery in Dar es Salaam</div>
+
+            <div id="deliveryFormSection">
+                <div class="input-group location-input" style="position: relative;">
+                    <span class="input-icon"><i class="fa-solid fa-circle-dot text-success"></i></span>
+                    <input type="text" id="delPickup" placeholder="Pickup point" class="form-control" onkeyup="debounceSearch(this, 'delPickupDropdown')">
+                    <div id="delPickupDropdown" class="suggestions-dropdown" style="display: none;"></div>
+                </div>
+
+                <div class="input-group location-input" style="position: relative;">
+                    <span class="input-icon"><i class="fa-solid fa-location-dot text-danger"></i></span>
+                    <input type="text" id="delDropoff" placeholder="Destination point" class="form-control" onkeyup="debounceSearch(this, 'delDropoffDropdown')">
+                    <div id="delDropoffDropdown" class="suggestions-dropdown" style="display: none;"></div>
+                </div>
+
+                <div class="row mb-3">
+                    <div style="flex:1;">
+                        <label style="font-size: 0.75rem; color: #94a3b8;">Recipient Name</label>
+                        <input type="text" id="delRecipientName" placeholder="Amani Joseph" class="form-control" style="padding-left: 12px; height: 42px; font-size: 0.85rem; margin-top: 4px;">
+                    </div>
+                    <div style="flex:1;">
+                        <label style="font-size: 0.75rem; color: #94a3b8;">Recipient Phone</label>
+                        <input type="text" id="delRecipientPhone" placeholder="+255 712..." class="form-control" style="padding-left: 12px; height: 42px; font-size: 0.85rem; margin-top: 4px;">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label style="font-size: 0.75rem; color: #94a3b8;">Package Size Category</label>
+                    <div style="display: flex; gap: 8px; margin-top: 6px;">
+                        <button class="btn btn-outline" style="flex:1; padding: 10px; font-size: 0.8rem; border-radius: 8px;" id="pkgSizeEnvelope" onclick="selectPackageSize('envelope')"><i class="fa-solid fa-envelope"></i> Envelope</button>
+                        <button class="btn btn-outline" style="flex:1; padding: 10px; font-size: 0.8rem; border-radius: 8px;" id="pkgSizeBox" onclick="selectPackageSize('box')"><i class="fa-solid fa-box"></i> Box</button>
+                        <button class="btn btn-outline" style="flex:1; padding: 10px; font-size: 0.8rem; border-radius: 8px;" id="pkgSizeCargo" onclick="selectPackageSize('cargo')"><i class="fa-solid fa-truck-moving"></i> Cargo</button>
+                    </div>
+                </div>
+
+                <!-- Live Route Estimates Display -->
+                <div id="delRouteStats" style="display: none; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; font-size: 0.8rem; color: #94a3b8; text-align: center; margin-bottom: 15px;"></div>
+
+                <!-- Courier Options -->
+                <div id="delOptionsSection" style="display: none;">
+                    <h4 style="font-size: 0.85rem; text-transform: uppercase; color: #94a3b8;">Courier Options</h4>
+                    <div class="ride-options-list" id="delTiersList"></div>
+                </div>
+
+                <button class="btn btn-primary btn-block mt-4" id="mainDelBtn" onclick="requestDeliveryBooking()" style="display: none;">Find Delivery Options</button>
+            </div>
+
+            <!-- Delivery Tracking Section -->
+            <div id="delTrackingSection" style="display: none;">
+                <div class="tracking-card">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div id="delTrackingStatusIcon" style="font-size: 1.5rem; color:#8b5cf6;">
+                            <i class="fa-solid fa-spinner fa-spin"></i>
+                        </div>
+                        <div>
+                            <h4 id="delTrackingStatusTitle" style="color: #ffffff; font-size: 1rem; font-weight: 600;">Finding courier...</h4>
+                            <p id="delTrackingStatusSub" style="color: #94a3b8; font-size: 0.8rem;">Connecting with nearby delivery riders</p>
+                        </div>
+                    </div>
+                    
+                    <div class="progress-bar">
+                        <div class="progress-bar-fill" id="delProgressBarFill"></div>
+                    </div>
+
+                    <div id="assignedCourierCard" style="display: none; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-weight: 600; font-size: 0.9rem; color: #ffffff;" id="courierName">Ramadhani Ally</div>
+                                <div style="font-size: 0.75rem; color: #94a3b8;" id="courierVehicle">Suzuki Bike • T 987 ABC</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="color: #f59e0b; font-size: 0.85rem;"><i class="fa-solid fa-star"></i> 4.85</div>
+                                <div style="font-size: 0.75rem; color: #8b5cf6;" id="courierEtaDisplay">2 mins away</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-secondary btn-block" id="cancelDelBtn" onclick="cancelActiveDelivery()" style="border: 1px solid rgba(244, 63, 94, 0.2); color:#f43f5e; margin-top: 10px;">Cancel Courier</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: TRANSIT -->
+        <div id="transitView" class="view-panel">
+            <h2 class="view-title">Public Transit & Bus</h2>
+            <div class="view-subtitle">Interactive Dar es Salaam DART bus tracker</div>
+
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
+                <div class="stat-box" onclick="selectTransitRoute(1)" id="transitCard1">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h4 style="color: #ffffff; font-size: 0.95rem; font-weight:600;">DART Route 1: Kariakoo - Kimara</h4>
+                            <p style="color:#94a3b8; font-size: 0.75rem; margin-top: 2px;">DART Expressway • 12 Bus stops</p>
+                        </div>
+                        <div style="font-weight:700; color: #3b82f6; font-size:0.9rem;">650 TZS</div>
+                    </div>
+                </div>
+                <div class="stat-box" onclick="selectTransitRoute(2)" id="transitCard2">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h4 style="color: #ffffff; font-size: 0.95rem; font-weight:600;">DART Route 2: Mwenge - Posta</h4>
+                            <p style="color:#94a3b8; font-size: 0.75rem; margin-top: 2px;">Bagamoyo Rd • 16 Bus stops</p>
+                        </div>
+                        <div style="font-weight:700; color: #3b82f6; font-size:0.9rem;">750 TZS</div>
+                    </div>
+                </div>
+                <div class="stat-box" onclick="selectTransitRoute(3)" id="transitCard3">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h4 style="color: #ffffff; font-size: 0.95rem; font-weight:600;">DART Route 3: Morocco - Kivukoni</h4>
+                            <p style="color:#94a3b8; font-size: 0.75rem; margin-top: 2px;">Kawawa / Ocean Rd • 9 Bus stops</p>
+                        </div>
+                        <div style="font-weight:700; color: #3b82f6; font-size:0.9rem;">650 TZS</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transit Route Details & Action -->
+            <div id="transitTicketSection" style="display: none; margin-top: 20px;">
+                <div class="tracking-card">
+                    <h4 style="color: #ffffff; font-size: 0.95rem; font-weight:600;" id="ticketRouteTitle">Kariakoo - Kimara</h4>
+                    <p style="color: #94a3b8; font-size: 0.8rem;" id="ticketRouteETA">Next bus arriving in 3 mins</p>
+                    <button class="btn btn-primary btn-block mt-2" id="buyTicketBtn" onclick="buyTransitTicket()">Buy Digital Boarding Ticket</button>
+                </div>
+            </div>
+
+            <!-- Ticket QR Presentation Modal Simulation -->
+            <div id="transitTicketSuccess" style="display: none; background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 20px; margin-top: 20px; text-align: center;">
+                <i class="fa-solid fa-circle-check text-success" style="font-size: 2.5rem; margin-bottom: 12px;"></i>
+                <h4 style="color: #ffffff; font-size: 1rem; font-weight: 600;">Ticket Issued via SMS!</h4>
+                <p style="color: #94a3b8; font-size: 0.75rem; margin-top: 4px;">A receipt and boarding confirmation code have been sent. Scan QR below at turnstile.</p>
+                <div style="margin: 15px auto; background: #ffffff; width: 120px; height: 120px; padding: 10px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                    <!-- Quick mock QR code -->
+                    <i class="fa-solid fa-qrcode" style="color: #000000; font-size: 100px;"></i>
+                </div>
+                <div style="font-family: monospace; font-size: 0.85rem; color:#ffffff; background:rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; display: inline-block;" id="ticketCodeDisplay">SM-TKT-12345</div>
+            </div>
+        </div>
+
+        <!-- VIEW: FLEET MANAGEMENT -->
+        <div id="fleetView" class="view-panel">
+            <h2 class="view-title">Fleet Management</h2>
+            <div class="view-subtitle">Live vehicle positions & health updates</div>
+
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
+                <div class="stat-box" style="padding:14px; display: flex; justify-content: space-between; align-items: center;" onclick="focusFleetVehicle(0)">
+                    <div>
+                        <div style="font-weight:600; font-size: 0.9rem; color:#ffffff;">T 123 DKM (Toyota Probox)</div>
+                        <div style="font-size:0.75rem; color:#94a3b8; margin-top: 2px;">Driver: Juma Hamisi • Kariakoo</div>
+                    </div>
+                    <span style="font-size: 0.75rem; font-weight: 600; padding: 4px 8px; border-radius: 4px; background: rgba(16, 185, 129, 0.1); color: #10b981;"><i class="fa-solid fa-circle" style="font-size:6px; margin-right:4px;"></i> Active</span>
+                </div>
+                <div class="stat-box" style="padding:14px; display: flex; justify-content: space-between; align-items: center;" onclick="focusFleetVehicle(1)">
+                    <div>
+                        <div style="font-weight:600; font-size: 0.9rem; color:#ffffff;">T 456 DKM (TVS Boda-boda)</div>
+                        <div style="font-size:0.75rem; color:#94a3b8; margin-top: 2px;">Driver: Mussa Ali • Oysterbay</div>
+                    </div>
+                    <span style="font-size: 0.75rem; font-weight: 600; padding: 4px 8px; border-radius: 4px; background: rgba(16, 185, 129, 0.1); color: #10b981;"><i class="fa-solid fa-circle" style="font-size:6px; margin-right:4px;"></i> Active</span>
+                </div>
+                <div class="stat-box" style="padding:14px; display: flex; justify-content: space-between; align-items: center;" onclick="focusFleetVehicle(2)">
+                    <div>
+                        <div style="font-weight:600; font-size: 0.9rem; color:#ffffff;">T 789 DKM (Suzuki Carry)</div>
+                        <div style="font-size:0.75rem; color:#94a3b8; margin-top: 2px;">Driver: Asha Saidi • Mwenge</div>
+                    </div>
+                    <span style="font-size: 0.75rem; font-weight: 600; padding: 4px 8px; border-radius: 4px; background: rgba(245, 158, 11, 0.1); color: #f59e0b;"><i class="fa-solid fa-circle" style="font-size:6px; margin-right:4px;"></i> Idle</span>
+                </div>
+            </div>
+            <button class="btn btn-outline btn-block mt-4" onclick="showAllFleetOnMap()">Plot All Vehicles on Map</button>
+        </div>
+
+        <!-- VIEW: PAYMENTS (WALLET) -->
+        <div id="walletView" class="view-panel">
+            <h2 class="view-title">Digital Wallet</h2>
+            <div class="view-subtitle">Manage wallet and M-Pesa mobile checkout</div>
+
+            <!-- Premium Gradient Card -->
+            <div class="glass-panel" style="padding: 24px; background: linear-gradient(135deg, #1e40af, #7c3aed); border: none; border-radius: 16px; margin-bottom: 24px; box-shadow: 0 10px 20px rgba(59, 130, 246, 0.25);">
+                <div style="font-size: 0.8rem; text-transform: uppercase; color: rgba(255, 255, 255, 0.7); font-weight: 600; letter-spacing: 0.05em;">Available Balance</div>
+                <div class="value" id="walletBigBalance" style="font-size: 2.2rem; font-weight: 700; color: #ffffff; margin-top: 8px;">TZS 0</div>
+                <div style="margin-top: 15px; font-size: 0.8rem; color: rgba(255,255,255,0.7);">Associated Phone: <span id="walletUserPhone" style="color:#ffffff; font-weight:600;">+255...</span></div>
+            </div>
+
+            <!-- Top Up Form -->
+            <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 12px; color:#ffffff;">Wallet Top Up</h3>
+            <div class="stat-card" style="padding: 20px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px;">
+                <!-- Operator Selector Grid -->
+                <div style="font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-bottom: 8px; font-weight: 600;">Select Mobile Operator</div>
+                <div class="operator-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px;">
+                    <div class="operator-card active" data-operator="mpesa" onclick="selectOperator(this)" style="background: rgba(255,255,255,0.03); border: 1px solid #e11d48; border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(225, 29, 72, 0.2);">
+                        <div style="font-size: 1.15rem; font-weight: 700; color: #e11d48; margin-bottom: 4px;">M-Pesa</div>
+                        <div style="font-size: 0.65rem; color: #a1a1aa; text-transform: uppercase;">Vodacom</div>
+                    </div>
+                    <div class="operator-card" data-operator="airtel" onclick="selectOperator(this)" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; transition: all 0.3s ease;">
+                        <div style="font-size: 1.15rem; font-weight: 700; color: #dc2626; margin-bottom: 4px;">Airtel</div>
+                        <div style="font-size: 0.65rem; color: #a1a1aa; text-transform: uppercase;">Airtel Money</div>
+                    </div>
+                    <div class="operator-card" data-operator="halopesa" onclick="selectOperator(this)" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; transition: all 0.3s ease;">
+                        <div style="font-size: 1.15rem; font-weight: 700; color: #ea580c; margin-bottom: 4px;">Halo Pesa</div>
+                        <div style="font-size: 0.65rem; color: #a1a1aa; text-transform: uppercase;">Halotel</div>
+                    </div>
+                    <div class="operator-card" data-operator="tigopesa" onclick="selectOperator(this)" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; transition: all 0.3s ease;">
+                        <div style="font-size: 1.15rem; font-weight: 700; color: #2563eb; margin-bottom: 4px;">Tigo Pesa</div>
+                        <div style="font-size: 0.65rem; color: #a1a1aa; text-transform: uppercase;">Tigo</div>
+                    </div>
+                </div>
+
+                <!-- Custom Phone Number Input -->
+                <div style="font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-bottom: 8px; font-weight: 600;">Phone Number</div>
+                <div class="input-group" style="position: relative; margin-bottom: 16px;">
+                    <span class="input-icon" style="color:rgba(255,255,255,0.6); font-weight: 600; font-size:0.9rem; display: flex; align-items: center; justify-content: center; height: 100%; width: 48px; position: absolute; left: 0; top: 0;"><i class="fa-solid fa-phone"></i></span>
+                    <input type="text" id="topupPhone" placeholder="Mobile Number (e.g. +255711223344)" class="form-control" style="padding-left: 48px; height: 46px; background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255,255,255,0.1); color: #ffffff; width: 100%; border-radius: 8px;">
+                </div>
+
+                <!-- Amount Input -->
+                <div style="font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-bottom: 8px; font-weight: 600;">Amount</div>
+                <div class="input-group" style="position: relative; margin-bottom: 20px;">
+                    <span class="input-icon" style="color:#10b981; font-weight: 700; font-size:0.9rem; display: flex; align-items: center; justify-content: center; height: 100%; width: 48px; position: absolute; left: 0; top: 0;">TZS</span>
+                    <input type="number" id="topupAmount" placeholder="Amount to top up (e.g. 5000)" class="form-control" style="padding-left: 48px; height: 46px; background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255,255,255,0.1); color: #ffffff; width: 100%; border-radius: 8px;">
+                </div>
+
+                <button class="btn btn-primary btn-block" id="topupSubmitBtn" onclick="triggerMobileMoneyCheckout()" style="height: 48px; font-weight: 600; letter-spacing: 0.5px; background: #3b82f6; border: none; color: white; border-radius: 8px; cursor: pointer; width: 100%;">Initiate M-Pesa STK Push</button>
+            </div>
+
+            <!-- Ledger Transactions List -->
+            <h3 style="font-size: 1.1rem; font-weight: 600; margin-top: 24px; margin-bottom: 12px; color:#ffffff;">Transaction Logs</h3>
+            <div class="tx-list" id="walletTxList">
+                <p style="color: #64748b; font-size: 0.85rem; padding: 10px 0;">No transactions recorded.</p>
+            </div>
+        </div>
+
+        <!-- VIEW: AT SANDBOX -->
+        <div id="atSandboxView" class="view-panel">
+            <h2 class="view-title">Africa's Talking Sandbox</h2>
+            <div class="view-subtitle">Offline capabilities simulator client</div>
+
+            <!-- Retro USSD phone -->
+            <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 12px; color:#ffffff; text-align: center;">USSD Dial Code Simulator (*384*811#)</h3>
+            <div class="ussd-phone-container">
+                <div class="ussd-screen">
+                    <div class="ussd-header" style="border-bottom: 1px solid rgba(56, 189, 248, 0.2); padding-bottom: 6px; text-align: center; font-size: 0.75rem; letter-spacing: 0.05em;">SAFARIMOVE SIMULATOR</div>
+                    <div class="ussd-content" id="ussdTextDisplay">CON Welcome to SafariMove (Tanzania)
+1. Book a Ride
+2. Check Balance
+3. Buy Transit Ticket</div>
+                    <div class="ussd-input-group">
+                        <span class="ussd-terminal-prefix">&gt;</span>
+                        <input type="text" id="ussdInput" class="ussd-input-field" placeholder="Enter option" onkeydown="if(event.key==='Enter') sendUSSDInput()">
+                        <button class="ussd-submit-btn" onclick="sendUSSDInput()">Send</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Webhook Triggers -->
+            <h3 style="font-size: 1.1rem; font-weight: 600; margin-top: 24px; margin-bottom: 12px; color:#ffffff;">n8n Webhook Utilities</h3>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button class="btn btn-outline btn-block" style="text-align: left; display: flex; align-items: center; justify-content: space-between;" onclick="triggerN8NWebhook('sms')">
+                    <span><i class="fa-solid fa-comment-sms text-success" style="margin-right:8px;"></i> Trigger SMS Alert Test</span>
+                    <i class="fa-solid fa-chevron-right" style="font-size: 0.8rem; color:#64748b;"></i>
+                </button>
+                <button class="btn btn-outline btn-block" style="text-align: left; display: flex; align-items: center; justify-content: space-between;" onclick="triggerN8NWebhook('airtime')">
+                    <span><i class="fa-solid fa-gift text-accent" style="margin-right:8px;"></i> Request TZS 500 Airtime Reward</span>
+                    <i class="fa-solid fa-chevron-right" style="font-size: 0.8rem; color:#64748b;"></i>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Leaflet Map Container -->
+    <div id="mapView"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="js/app.js"></script>
+    <script src="js/map.js"></script>
+    <script>
+        let loggedInUser = null;
+        let selectedPickup = null;
+        let selectedDropoff = null;
+        let selectedRideTier = 'saver';
+        let selectedDeliveryTier = 'courier';
+        let calculatedRouteData = null;
+        let searchTimeout = null;
+        let currentUssdText = '';
+        let ussdSessionId = 'SM_USSD_' + Math.floor(Math.random()*900000) + 100000;
+        let selectedPackageSizeVal = 'box';
+
+        // Preloaded DART Route Coordinates in Dar es Salaam for static polyline drawing
+        const DART_ROUTES = {
+            1: {
+                name: "Kariakoo - Kimara",
+                stops: [
+                    [-6.8143, 39.2798, "Kariakoo Terminal"],
+                    [-6.8080, 39.2610, "Fire Station Stop"],
+                    [-6.8040, 39.2435, "Magomeni Stop"],
+                    [-6.7915, 39.2222, "Manzese Stop"],
+                    [-6.7766, 39.2083, "Ubungo Terminal"],
+                    [-6.7790, 39.1910, "Kimara Stop"]
+                ]
+            },
+            2: {
+                name: "Mwenge - Posta",
+                stops: [
+                    [-6.7690, 39.2245, "Mwenge Terminal"],
+                    [-6.7780, 39.2430, "Kijitonyama Stop"],
+                    [-6.7940, 39.2650, "Morocco Station"],
+                    [-6.8055, 39.2785, "Selander Bridge Stop"],
+                    [-6.8125, 39.2905, "Posta Central Station"]
+                ]
+            },
+            3: {
+                name: "Morocco - Kivukoni",
+                stops: [
+                    [-6.7940, 39.2650, "Morocco Station"],
+                    [-6.8010, 39.2760, "Oysterbay Stop"],
+                    [-6.8075, 39.2885, "Salender Bridge Stop"],
+                    [-6.8110, 39.2940, "Barack Obama Dr Stop"],
+                    [-6.8160, 39.3000, "Kivukoni Ferry Terminal"]
+                ]
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 1. Auth check
+            const userStr = localStorage.getItem('safarimove_user');
+            if (!userStr) {
+                if (window.location.hash) {
+                    sessionStorage.setItem('safarimove_redirect_hash', window.location.hash);
+                }
+                window.location.href = 'login.html';
+                return;
+            }
+            loggedInUser = JSON.parse(userStr);
+
+            // 2. Hydrate Profile Info
+            updateProfileUI();
+            
+            // Fetch live data from backend to sync balance
+            await syncUserProfile();
+
+            // 3. Initialize leaflet map
+            setTimeout(() => {
+                initMap();
+                // If there's an active location, draw user marker
+                if (map) {
+                    map.setView(TANZANIA_CENTER, 13);
+                }
+                
+                // 4. Check for redirect flags in URL Hash
+                handleHashRouting();
+
+                // 5. Check for pending trip payload from landing page
+                processPendingTripPayload();
+            }, 500);
+
+            // 6. Hook up Sidebar switching
+            document.querySelectorAll('.nav-item[data-view]').forEach(item => {
+                item.addEventListener('click', function() {
+                    const targetViewId = this.getAttribute('data-view');
+                    switchTab(targetViewId);
+                });
+            });
+
+            // 7. Load transaction and trip logs inside user panel
+            fetchUserActivityLogs();
+        });
+
+        // Syncs user balance/profile info from the backend database
+        async function syncUserProfile() {
+            try {
+                const response = await fetch(`/api/users/${loggedInUser.id}`);
+                if (response.ok) {
+                    const freshUser = await response.json();
+                    loggedInUser = freshUser;
+                    localStorage.setItem('safarimove_user', JSON.stringify(freshUser));
+                    updateProfileUI();
+                }
+            } catch (err) {
+                console.warn('Failed to sync profile from server:', err.message);
+            }
+        }
+
+        function updateProfileUI() {
+            const displayName = loggedInUser.name || loggedInUser.phone;
+            document.getElementById('welcomeText').innerText = `Welcome back, ${displayName}`;
+            document.getElementById('userNameDisplay').innerText = displayName;
+            
+            const formattedBalance = `Balance: TZS ${parseFloat(loggedInUser.balance).toLocaleString()}`;
+            document.getElementById('userBalanceDisplay').innerText = formattedBalance;
+            document.getElementById('dashBalanceDisplay').innerText = `TZS ${parseFloat(loggedInUser.balance).toLocaleString()}`;
+            document.getElementById('walletBigBalance').innerText = `TZS ${parseFloat(loggedInUser.balance).toLocaleString()}`;
+            document.getElementById('walletUserPhone').innerText = loggedInUser.phone;
+            
+            const topupPhoneInput = document.getElementById('topupPhone');
+            if (topupPhoneInput && (!topupPhoneInput.value || topupPhoneInput.value.trim() === '')) {
+                topupPhoneInput.value = loggedInUser.phone;
+            }
+            
+            document.getElementById('userAvatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=3b82f6&color=fff`;
+        }
+
+        // Handles sidebar tab navigation
+        function switchTab(viewId) {
+            // Remove active from all nav items
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            
+            // Find sidebar menu item corresponding to viewId
+            const activeItem = document.querySelector(`.nav-item[data-view="${viewId}"]`);
+            if (activeItem) activeItem.classList.add('active');
+
+            // Hide all view panels
+            document.querySelectorAll('.view-panel').forEach(v => v.classList.remove('active'));
+            
+            // Show target view panel
+            const panel = document.getElementById(viewId);
+            if (panel) panel.classList.add('active');
+
+            // Clear routing lines if switching to views that don't need it
+            if (viewId === 'dashboardView' || viewId === 'walletView' || viewId === 'atSandboxView') {
+                clearRoute();
+                if (map) {
+                    map.setView(TANZANIA_CENTER, 13);
+                    simulateNearbyDrivers(TANZANIA_CENTER[0], TANZANIA_CENTER[1]);
+                }
+            } else if (viewId === 'fleetView') {
+                clearRoute();
+                showAllFleetOnMap();
+            }
+
+            // Invalidate leaflet size to avoid display glitches
+            if (map) {
+                setTimeout(() => map.invalidateSize(), 150);
+            }
+        }
+
+        // Supports routing hash navigation (e.g. dashboard.html#ride)
+        function handleHashRouting() {
+            const hash = window.location.hash;
+            if (hash === '#ride') {
+                switchTab('rideView');
+            } else if (hash === '#delivery') {
+                switchTab('deliveryView');
+            } else if (hash === '#wallet' || hash === '#payment') {
+                switchTab('walletView');
+            } else if (hash === '#transit') {
+                switchTab('transitView');
+            } else if (hash === '#fleet') {
+                switchTab('fleetView');
+            } else if (hash === '#sandbox') {
+                switchTab('atSandboxView');
+            }
+        }
+
+        // Process pending booking payload transfered from landing page
+        function processPendingTripPayload() {
+            const pendingTripStr = sessionStorage.getItem('safarimove_pending_trip');
+            if (!pendingTripStr) return;
+
+            // Clear immediately
+            sessionStorage.removeItem('safarimove_pending_trip');
+            
+            try {
+                const pending = JSON.parse(pendingTripStr);
+                
+                if (pending.type === 'ride') {
+                    switchTab('rideView');
+                    document.getElementById('ridePickup').value = pending.pickupName;
+                    document.getElementById('rideDropoff').value = pending.dropoffName;
+                    selectedPickup = pending.pickupCoords;
+                    selectedDropoff = pending.dropoffCoords;
+                    
+                    // Render Options
+                    displayRideTierOptions(pending.distance);
+                    document.getElementById('rideRouteStats').innerText = `Distance: ${pending.distance} km • Duration: ${pending.duration} mins`;
+                    document.getElementById('rideRouteStats').style.display = 'block';
+                    document.getElementById('mainRideBtn').style.display = 'block';
+                    document.getElementById('mainRideBtn').innerText = `Request ${pending.tierTitle}`;
+                    
+                    // Center and Draw Route
+                    plotRoute(selectedPickup, selectedDropoff);
+                } else if (pending.type === 'delivery') {
+                    switchTab('deliveryView');
+                    document.getElementById('delPickup').value = pending.pickupName;
+                    document.getElementById('delDropoff').value = pending.dropoffName;
+                    selectedPickup = pending.pickupCoords;
+                    selectedDropoff = pending.dropoffCoords;
+                    
+                    // Render Delivery Options
+                    displayDeliveryTierOptions(pending.distance);
+                    document.getElementById('delRouteStats').innerText = `Distance: ${pending.distance} km • Route calculated`;
+                    document.getElementById('delRouteStats').style.display = 'block';
+                    document.getElementById('mainDelBtn').style.display = 'block';
+                    document.getElementById('mainDelBtn').innerText = `Dispatch Courier`;
+                    
+                    plotRoute(selectedPickup, selectedDropoff);
+                }
+            } catch (e) {
+                console.error("Error processing pending landing page booking:", e);
+            }
+        }
+
+        // Nominatim dropdown debounce search
+        function debounceSearch(inputEl, dropdownId) {
+            const val = inputEl.value.trim();
+            const dropdown = document.getElementById(dropdownId);
+            
+            clearTimeout(searchTimeout);
+            if (!val || val.length < 3) {
+                dropdown.style.display = 'none';
+                return;
+            }
+
+            searchTimeout = setTimeout(async () => {
+                const results = await searchTanzaniaLocation(val);
+                if (results && results.length > 0) {
+                    dropdown.innerHTML = results.map(item => `
+                        <div class="suggestion-item" onclick="selectSuggestion('${dropdownId}', '${inputEl.id}', '${item.display_name.replace(/'/g, "\\'")}', ${item.lat}, ${item.lon})">
+                            <i class="fa-solid fa-location-dot" style="color: #3b82f6;"></i>
+                            <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.display_name}</span>
+                        </div>
+                    `).join('');
+                    dropdown.style.display = 'block';
+                } else {
+                    dropdown.style.display = 'none';
+                }
+            }, 300);
+        }
+
+        // Suggestion selected
+        async function selectSuggestion(dropdownId, inputId, displayName, lat, lon) {
+            document.getElementById(inputId).value = displayName;
+            document.getElementById(dropdownId).style.display = 'none';
+
+            const coord = [lat, lon];
+            
+            if (inputId.includes('ride')) {
+                if (inputId === 'ridePickup') selectedPickup = coord;
+                else selectedDropoff = coord;
+
+                if (selectedPickup && selectedDropoff) {
+                    calculateRideRoute();
+                } else {
+                    map.setView(coord, 14);
+                    addUserMarker(lat, lon);
+                }
+            } else if (inputId.includes('del')) {
+                if (inputId === 'delPickup') selectedPickup = coord;
+                else selectedDropoff = coord;
+
+                if (selectedPickup && selectedDropoff) {
+                    calculateDeliveryRoute();
+                } else {
+                    map.setView(coord, 14);
+                    addUserMarker(lat, lon);
+                }
+            }
+        }
+
+        // Calculate Ride Route
+        async function calculateRideRoute() {
+            document.getElementById('mainRideBtn').innerText = 'Calculating Route...';
+            document.getElementById('mainRideBtn').style.display = 'block';
+            document.getElementById('mainRideBtn').disabled = true;
+
+            const routeInfo = await plotRoute(selectedPickup, selectedDropoff);
+            calculatedRouteData = routeInfo;
+
+            document.getElementById('mainRideBtn').disabled = false;
+            document.getElementById('mainRideBtn').innerText = 'Request SafariSaver';
+
+            document.getElementById('rideRouteStats').innerText = `Distance: ${routeInfo.distance} km • Duration: ${routeInfo.duration} mins`;
+            document.getElementById('rideRouteStats').style.display = 'block';
+
+            // Display dynamic pricing tiers
+            displayRideTierOptions(routeInfo.distance);
+        }
+
+        function displayRideTierOptions(distance) {
+            const motoPrice = Math.max(1500, Math.round(distance * 400));
+            const saverPrice = Math.max(3000, Math.round(distance * 1000));
+            const comfortPrice = Math.max(5000, Math.round(distance * 1800));
+
+            const container = document.getElementById('rideTiersList');
+            container.innerHTML = `
+                <div class="ride-option-card selected" data-tier="saver" onclick="selectRideTier(this, 'saver', ${saverPrice})">
+                    <i class="fa-solid fa-car text-primary"></i>
+                    <div class="ride-option-details">
+                        <div class="ride-option-title">SafariSaver</div>
+                        <div class="ride-option-sub">Value everyday rides • 4 min ETA</div>
+                    </div>
+                    <div class="ride-option-price">TZS ${saverPrice.toLocaleString()}</div>
+                </div>
+                <div class="ride-option-card" data-tier="moto" onclick="selectRideTier(this, 'moto', ${motoPrice})">
+                    <i class="fa-solid fa-motorcycle text-accent"></i>
+                    <div class="ride-option-details">
+                        <div class="ride-option-title">SafariMoto</div>
+                        <div class="ride-option-sub">Boda-boda ride • 2 min ETA</div>
+                    </div>
+                    <div class="ride-option-price">TZS ${motoPrice.toLocaleString()}</div>
+                </div>
+                <div class="ride-option-card" data-tier="comfort" onclick="selectRideTier(this, 'comfort', ${comfortPrice})">
+                    <i class="fa-solid fa-couch text-warning"></i>
+                    <div class="ride-option-details">
+                        <div class="ride-option-title">SafariComfort</div>
+                        <div class="ride-option-sub">Premium AC sedans • 3 min ETA</div>
+                    </div>
+                    <div class="ride-option-price">TZS ${comfortPrice.toLocaleString()}</div>
+                </div>
+            `;
+            document.getElementById('rideOptionsSection').style.display = 'block';
+        }
+
+        function selectRideTier(el, tier, price) {
+            document.querySelectorAll('#rideTiersList .ride-option-card').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedRideTier = tier;
+            
+            const tierNames = { saver: 'SafariSaver', moto: 'SafariMoto', comfort: 'SafariComfort' };
+            document.getElementById('mainRideBtn').innerText = `Request ${tierNames[tier]} (TZS ${price.toLocaleString()})`;
+        }
+
+        // Ride booking execution & simulated trip assignment
+        async function requestRideBooking() {
+            if (!selectedPickup || !selectedDropoff || !calculatedRouteData) return;
+
+            const selectedOption = document.querySelector('#rideTiersList .ride-option-card.selected');
+            const fareText = selectedOption.querySelector('.ride-option-price').innerText;
+            const fareVal = parseInt(fareText.replace(/[^0-9]/g, ''));
+            const tierName = selectedOption.querySelector('.ride-option-title').innerText;
+
+            if (loggedInUser.balance < fareVal) {
+                showToast("Insufficient balance. Please top up your digital wallet first.", "error");
+                switchTab('walletView');
+                return;
+            }
+
+            document.getElementById('rideFormSection').style.display = 'none';
+            document.getElementById('rideTrackingSection').style.display = 'block';
+            document.getElementById('rideProgressBarFill').style.width = '0%';
+
+            showToast("Booking requested! Checking driver availability...", "info");
+
+            try {
+                // 1. Create Trip Record in Database
+                const response = await fetch('/api/trips', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'x-user-id': loggedInUser.id.toString()
+                    },
+                    body: JSON.stringify({
+                        rider_id: loggedInUser.id,
+                        type: 'ride',
+                        fare: fareVal,
+                        pickup_lat: selectedPickup[0],
+                        pickup_lng: selectedPickup[1],
+                        dropoff_lat: selectedDropoff[0],
+                        dropoff_lng: selectedDropoff[1]
+                    })
+                });
+
+                if (!response.ok) throw new Error("Failed to create database trip");
+                
+                const responseData = await response.json();
+                const tripId = responseData.trip_id;
+
+                // 2. Start Map simulation trip
+                simulateTripOnMap(tripId, 'ride', selectedRideTier, fareVal, tierName);
+            } catch (err) {
+                console.error("Booking error:", err);
+                showToast("Failed to book trip. Simulation running in sandbox mode.", "warning");
+                simulateTripOnMap(999, 'ride', selectedRideTier, fareVal, tierName);
+            }
+        }
+
+        // Map Trip simulation coordinator
+        function simulateTripOnMap(tripId, type, tier, fare, tierTitle) {
+            const routeCoords = calculatedRouteData.coordinates;
+            
+            // Set dashboard active trip banner
+            document.getElementById('activeTripBanner').style.display = 'block';
+            document.getElementById('activeTripDesc').innerText = `${tierTitle} to destination.`;
+            document.getElementById('activeTripPercent').innerText = '0%';
+
+            simulateDriverTrip(
+                routeCoords, 
+                tier, 
+                async (status, value) => {
+                    // Status updates callback
+                    const statusText = document.getElementById(type === 'ride' ? 'rideTrackingStatusTitle' : 'delTrackingStatusTitle');
+                    const statusSub = document.getElementById(type === 'ride' ? 'rideTrackingStatusSub' : 'delTrackingStatusSub');
+                    const progressFill = document.getElementById(type === 'ride' ? 'rideProgressBarFill' : 'delProgressBarFill');
+                    const driverCard = document.getElementById(type === 'ride' ? 'assignedDriverCard' : 'assignedCourierCard');
+                    
+                    if (status === 'arriving') {
+                        statusText.innerText = 'Driver Assigned';
+                        statusSub.innerText = `Driver is arriving at pickup in ${value} mins`;
+                        progressFill.style.width = '15%';
+                        driverCard.style.display = 'block';
+                        document.getElementById('activeTripPercent').innerText = 'Arriving';
+                        
+                        // Update status in Database
+                        updateTripStatusInDb(tripId, 'accepted');
+                    } else if (status === 'arrived') {
+                        statusText.innerText = 'Driver Arrived';
+                        statusSub.innerText = 'Driver is waiting at your pickup point';
+                        progressFill.style.width = '30%';
+                        document.getElementById('activeTripPercent').innerText = 'Arrived';
+                        
+                        // Send SMS Alert to User via n8n
+                        triggerN8NSMS(loggedInUser.phone, `SafariMove: Your driver Juma has arrived at the pickup location. Vehicle plate: T 123 DKM.`);
+                        updateTripStatusInDb(tripId, 'in_progress');
+                    } else if (status === 'in_progress') {
+                        statusText.innerText = 'Trip In Progress';
+                        statusSub.innerText = `Heading to dropoff...`;
+                        const basePct = 30 + Math.round(value * 0.7);
+                        progressFill.style.width = `${basePct}%`;
+                        document.getElementById('activeTripPercent').innerText = `${value}%`;
+                    } else if (status === 'completed') {
+                        statusText.innerText = 'Trip Completed!';
+                        statusSub.innerText = `Thank you for riding with SafariMove!`;
+                        progressFill.style.width = '100%';
+                        driverCard.style.display = 'none';
+                        document.getElementById('activeTripBanner').style.display = 'none';
+                        document.getElementById(type === 'ride' ? 'cancelRideBtn' : 'cancelDelBtn').style.display = 'none';
+
+                        // Deduct wallet payment and update balance
+                        await recordCompletedPayment(tripId, fare, type, tierTitle);
+                        updateTripStatusInDb(tripId, 'completed');
+
+                        // Show Completed/Close form button
+                        const actionBtn = document.getElementById(type === 'ride' ? 'cancelRideBtn' : 'cancelDelBtn');
+                        actionBtn.style.display = 'block';
+                        actionBtn.innerText = 'Done';
+                        actionBtn.style.borderColor = '#10b981';
+                        actionBtn.style.color = '#10b981';
+                        actionBtn.onclick = () => resetTrackingFlow(type);
+
+                        triggerN8NSMS(loggedInUser.phone, `SafariMove: You have arrived at your destination. TZS ${fare.toLocaleString()} deducted from your wallet.`);
+                    }
+                },
+                () => {
+                    console.log('Driver simulation completed.');
+                }
+            );
+        }
+
+        async function updateTripStatusInDb(tripId, status) {
+            if (tripId === 999) return;
+            try {
+                await fetch(`/api/trips/${tripId}`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'x-user-id': loggedInUser.id.toString()
+                    },
+                    body: JSON.stringify({ status })
+                });
+            } catch (e) {
+                console.warn('Trip state update error:', e.message);
+            }
+        }
+
+        async function recordCompletedPayment(tripId, fare, type, description) {
+            try {
+                // Deduct via Transaction API
+                const response = await fetch('/api/transactions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-user-id': loggedInUser.id.toString()
+                    },
+                    body: JSON.stringify({
+                        user_id: loggedInUser.id,
+                        trip_id: tripId !== 999 ? tripId : null,
+                        amount: fare,
+                        type: 'payment',
+                        reference: `TRIP_PAY_${type.toUpperCase()}_${Date.now()}`
+                    })
+                });
+
+                if (response.ok) {
+                    showToast(`TZS ${fare.toLocaleString()} deducted from wallet.`, 'success');
+                    await syncUserProfile();
+                    fetchUserActivityLogs();
+                }
+            } catch (err) {
+                console.error('Failed to deduct ride fare:', err);
+            }
+        }
+
+        function resetTrackingFlow(type) {
+            if (type === 'ride') {
+                document.getElementById('rideTrackingSection').style.display = 'none';
+                document.getElementById('rideFormSection').style.display = 'block';
+                document.getElementById('ridePickup').value = '';
+                document.getElementById('rideDropoff').value = '';
+                document.getElementById('rideRouteStats').style.display = 'none';
+                document.getElementById('rideOptionsSection').style.display = 'none';
+                document.getElementById('mainRideBtn').style.display = 'none';
+                document.getElementById('cancelRideBtn').innerText = 'Cancel Trip';
+                document.getElementById('cancelRideBtn').style.borderColor = 'rgba(244, 63, 94, 0.2)';
+                document.getElementById('cancelRideBtn').style.color = '#f43f5e';
+                document.getElementById('cancelRideBtn').onclick = cancelActiveRide;
+                selectedPickup = null;
+                selectedDropoff = null;
+            } else {
+                document.getElementById('delTrackingSection').style.display = 'none';
+                document.getElementById('delFormSection').style.display = 'block';
+                document.getElementById('delPickup').value = '';
+                document.getElementById('delDropoff').value = '';
+                document.getElementById('delRecipientName').value = '';
+                document.getElementById('delRecipientPhone').value = '';
+                document.getElementById('delRouteStats').style.display = 'none';
+                document.getElementById('delOptionsSection').style.display = 'none';
+                document.getElementById('mainDelBtn').style.display = 'none';
+                document.getElementById('cancelDelBtn').innerText = 'Cancel Courier';
+                document.getElementById('cancelDelBtn').style.borderColor = 'rgba(244, 63, 94, 0.2)';
+                document.getElementById('cancelDelBtn').style.color = '#f43f5e';
+                document.getElementById('cancelDelBtn').onclick = cancelActiveDelivery;
+                selectedPickup = null;
+                selectedDropoff = null;
+            }
+            clearRoute();
+            if (map) {
+                map.setView(TANZANIA_CENTER, 13);
+                simulateNearbyDrivers(TANZANIA_CENTER[0], TANZANIA_CENTER[1]);
+            }
+        }
+
+        function cancelActiveRide() {
+            resetTrackingFlow('ride');
+            showToast("Ride request cancelled.", "info");
+        }
+
+        function cancelActiveDelivery() {
+            resetTrackingFlow('delivery');
+            showToast("Delivery courier dispatch cancelled.", "info");
+        }
+
+        // Calculate Delivery Route
+        async function calculateDeliveryRoute() {
+            document.getElementById('mainDelBtn').innerText = 'Calculating Route...';
+            document.getElementById('mainDelBtn').style.display = 'block';
+            document.getElementById('mainDelBtn').disabled = true;
+
+            const routeInfo = await plotRoute(selectedPickup, selectedDropoff);
+            calculatedRouteData = routeInfo;
+
+            document.getElementById('mainDelBtn').disabled = false;
+            document.getElementById('mainDelBtn').innerText = 'Dispatch Courier';
+
+            document.getElementById('delRouteStats').innerText = `Distance: ${routeInfo.distance} km • Delivery Route Established`;
+            document.getElementById('delRouteStats').style.display = 'block';
+
+            // Display dynamic pricing tiers
+            displayDeliveryTierOptions(routeInfo.distance);
+        }
+
+        function displayDeliveryTierOptions(distance) {
+            let courierPrice = Math.max(2500, Math.round(distance * 900));
+            let cargoPrice = Math.max(15000, Math.round(distance * 3000));
+
+            // Adjust based on size
+            if (selectedPackageSizeVal === 'envelope') {
+                courierPrice = Math.round(courierPrice * 0.8);
+            } else if (selectedPackageSizeVal === 'cargo') {
+                courierPrice = Math.round(courierPrice * 1.5);
+                cargoPrice = Math.round(cargoPrice * 1.2);
+            }
+
+            const container = document.getElementById('delTiersList');
+            container.innerHTML = `
+                <div class="ride-option-card selected" data-tier="courier" onclick="selectDeliveryTier(this, 'courier', ${courierPrice})">
+                    <i class="fa-solid fa-motorcycle text-accent"></i>
+                    <div class="ride-option-details">
+                        <div class="ride-option-title">Standard Courier</div>
+                        <div class="ride-option-sub">Bike dispatch for small items • 3 min ETA</div>
+                    </div>
+                    <div class="ride-option-price">TZS ${courierPrice.toLocaleString()}</div>
+                </div>
+                <div class="ride-option-card" data-tier="cargo" onclick="selectDeliveryTier(this, 'cargo', ${cargoPrice})">
+                    <i class="fa-solid fa-truck-moving text-success"></i>
+                    <div class="ride-option-details">
+                        <div class="ride-option-title">SafariCargo</div>
+                        <div class="ride-option-sub">Heavy moving and boxed freight • 8 min ETA</div>
+                    </div>
+                    <div class="ride-option-price">TZS ${cargoPrice.toLocaleString()}</div>
+                </div>
+            `;
+            document.getElementById('delOptionsSection').style.display = 'block';
+        }
+
+        function selectDeliveryTier(el, tier, price) {
+            document.querySelectorAll('#delTiersList .ride-option-card').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedDeliveryTier = tier;
+            
+            const tierNames = { courier: 'Standard Courier', cargo: 'SafariCargo' };
+            document.getElementById('mainDelBtn').innerText = `Dispatch ${tierNames[tier]} (TZS ${price.toLocaleString()})`;
+        }
+
+        function selectPackageSize(size) {
+            document.querySelectorAll('[id^="pkgSize"]').forEach(btn => btn.classList.remove('active'));
+            
+            const btnId = 'pkgSize' + size.charAt(0).toUpperCase() + size.slice(1);
+            document.getElementById(btnId).classList.add('active');
+            selectedPackageSizeVal = size;
+
+            if (selectedPickup && selectedDropoff && calculatedRouteData) {
+                displayDeliveryTierOptions(calculatedRouteData.distance);
+            }
+        }
+
+        async function requestDeliveryBooking() {
+            if (!selectedPickup || !selectedDropoff || !calculatedRouteData) return;
+            const rName = document.getElementById('delRecipientName').value.trim();
+            const rPhone = document.getElementById('delRecipientPhone').value.trim();
+
+            if (!rName || !rPhone) {
+                showToast("Please enter recipient name and phone number.", "error");
+                return;
+            }
+
+            const selectedOption = document.querySelector('#delTiersList .ride-option-card.selected');
+            const fareText = selectedOption.querySelector('.ride-option-price').innerText;
+            const fareVal = parseInt(fareText.replace(/[^0-9]/g, ''));
+            const tierName = selectedOption.querySelector('.ride-option-title').innerText;
+
+            if (loggedInUser.balance < fareVal) {
+                showToast("Insufficient balance for delivery dispatch.", "error");
+                switchTab('walletView');
+                return;
+            }
+
+            document.getElementById('deliveryFormSection').style.display = 'none';
+            document.getElementById('delTrackingSection').style.display = 'block';
+            document.getElementById('delProgressBarFill').style.width = '0%';
+
+            showToast("Dispatched delivery request to local grid...", "info");
+
+            try {
+                // Create Trip record (type = delivery)
+                const response = await fetch('/api/trips', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-user-id': loggedInUser.id.toString()
+                    },
+                    body: JSON.stringify({
+                        rider_id: loggedInUser.id,
+                        type: 'delivery',
+                        fare: fareVal,
+                        pickup_lat: selectedPickup[0],
+                        pickup_lng: selectedPickup[1],
+                        dropoff_lat: selectedDropoff[0],
+                        dropoff_lng: selectedDropoff[1]
+                    })
+                });
+
+                if (!response.ok) throw new Error("Failed delivery DB booking");
+                const responseData = await response.json();
+                
+                simulateTripOnMap(responseData.trip_id, 'delivery', selectedDeliveryTier, fareVal, tierName);
+            } catch (err) {
+                console.error("Delivery trip booking failed:", err);
+                simulateTripOnMap(999, 'delivery', selectedDeliveryTier, fareVal, tierName);
+            }
+        }
+
+        // Transit interactive routing
+        function selectTransitRoute(routeId) {
+            document.querySelectorAll('[id^="transitCard"]').forEach(card => card.style.borderColor = 'rgba(255,255,255,0.05)');
+            document.getElementById(`transitCard${routeId}`).style.borderColor = '#3b82f6';
+            document.getElementById('transitTicketSuccess').style.display = 'none';
+
+            const routeData = DART_ROUTES[routeId];
+            document.getElementById('ticketRouteTitle').innerText = `DART Route: ${routeData.name}`;
+            
+            const etas = { 1: '3 mins', 2: '5 mins', 3: '2 mins' };
+            document.getElementById('ticketRouteETA').innerText = `Next scheduled express bus in ${etas[routeId]}`;
+            document.getElementById('transitTicketSection').style.display = 'block';
+
+            // Draw route stops on map
+            clearRoute();
+            
+            const coords = routeData.stops.map(stop => [stop[0], stop[1]]);
+            pickupMarker = L.marker(coords[0], {
+                icon: createMarkerIcon('fa-solid fa-bus', '#3b82f6', 28)
+            }).addTo(map).bindPopup(`<b>Start Stop:</b><br>${routeData.stops[0][2]}`);
+
+            dropoffMarker = L.marker(coords[coords.length - 1], {
+                icon: createMarkerIcon('fa-solid fa-flag-checkered', '#ef4444', 28)
+            }).addTo(map).bindPopup(`<b>Terminal:</b><br>${routeData.stops[coords.length - 1][2]}`);
+
+            // Draw intermediate stops
+            for (let i = 1; i < coords.length - 1; i++) {
+                const stopMarker = L.marker(coords[i], {
+                    icon: createMarkerIcon('fa-solid fa-circle', '#64748b', 16)
+                }).addTo(map).bindPopup(`<b>Stop ${i}:</b><br>${routeData.stops[i][2]}`);
+                nearbyDrivers.push(stopMarker); // track to clear later
+            }
+
+            routeLine = L.polyline(coords, {
+                color: '#3b82f6',
+                weight: 6,
+                opacity: 0.9
+            }).addTo(map);
+
+            const bounds = L.latLngBounds(coords);
+            map.fitBounds(bounds, { padding: [40, 40] });
+            
+            // Store selected route ID for buy ticket handler
+            document.getElementById('buyTicketBtn').setAttribute('data-route-id', routeId);
+        }
+
+        async function buyTransitTicket() {
+            const btn = document.getElementById('buyTicketBtn');
+            const routeId = btn.getAttribute('data-route-id');
+            const routeData = DART_ROUTES[routeId];
+            
+            const fares = { 1: 650, 2: 750, 3: 650 };
+            const fare = fares[routeId];
+
+            if (loggedInUser.balance < fare) {
+                showToast("Insufficient balance for transit ticket.", "error");
+                switchTab('walletView');
+                return;
+            }
+
+            btn.innerText = 'Issuing Ticket...';
+            btn.disabled = true;
+
+            try {
+                // Deduct payment and record transaction
+                const response = await fetch('/api/transactions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-user-id': loggedInUser.id.toString()
+                    },
+                    body: JSON.stringify({
+                        user_id: loggedInUser.id,
+                        amount: fare,
+                        type: 'payment',
+                        reference: `DART_TKT_${routeId}_${Date.now()}`
+                    })
+                });
+
+                if (response.ok) {
+                    showToast("Boarding ticket issued!", "success");
+                    await syncUserProfile();
+                    fetchUserActivityLogs();
+
+                    const tktCode = `SM-DART-${Math.floor(Math.random()*90000)+10000}`;
+                    document.getElementById('ticketCodeDisplay').innerText = tktCode;
+                    document.getElementById('transitTicketSection').style.display = 'none';
+                    document.getElementById('transitTicketSuccess').style.display = 'block';
+
+                    // Trigger SMS via n8n
+                    triggerN8NSMS(loggedInUser.phone, `SafariMove: DART Boarding Ticket Confirmed for ${routeData.name}. TZS ${fare} deducted. Present code ${tktCode} at terminal barrier.`);
+                } else {
+                    throw new Error("Failed to record ticket transaction");
+                }
+            } catch (err) {
+                console.error(err);
+                showToast("Failed to complete ticket transaction.", "error");
+            } finally {
+                btn.innerText = 'Buy Digital Boarding Ticket';
+                btn.disabled = false;
+            }
+        }
+
+        // Fleet vehicle map plotter
+        function focusFleetVehicle(vehicleIndex) {
+            if (!map) return;
+            // Predefined coordinates for the three vehicles in seed
+            const coordinates = [
+                [-6.8143, 39.2798], // Kariakoo
+                [-6.7900, 39.2700], // Oysterbay
+                [-6.7690, 39.2245]  // Mwenge
+            ];
+            map.setView(coordinates[vehicleIndex], 15);
+        }
+
+        function showAllFleetOnMap() {
+            if (!map) return;
+            clearRoute();
+            
+            const fleetCoords = [
+                { coords: [-6.8143, 39.2798], name: "T 123 DKM", driver: "Juma Hamisi", type: "Car" },
+                { coords: [-6.7900, 39.2700], name: "T 456 DKM", driver: "Mussa Ali", type: "Boda-boda" },
+                { coords: [-6.7690, 39.2245], name: "T 789 DKM", driver: "Asha Saidi", type: "Cargo Truck" }
+            ];
+
+            const bounds = [];
+            fleetCoords.forEach(veh => {
+                const icon = veh.type === "Boda-boda" ? 'fa-solid fa-motorcycle' : (veh.type === "Car" ? 'fa-solid fa-car' : 'fa-solid fa-truck');
+                const color = veh.type === "Boda-boda" ? '#8b5cf6' : (veh.type === "Car" ? '#3b82f6' : '#f59e0b');
+                
+                const marker = L.marker(veh.coords, {
+                    icon: createMarkerIcon(icon, color, 28)
+                }).addTo(map).bindPopup(`<b>${veh.name}</b><br>${veh.type}<br>Driver: ${veh.driver}`);
+                
+                nearbyDrivers.push(marker);
+                bounds.push(veh.coords);
+            });
+
+            if (bounds.length > 0) {
+                map.fitBounds(L.latLngBounds(bounds), { padding: [50, 50] });
+            }
+        }
+
+        // Digital wallet triggers
+        let selectedOperator = 'mpesa';
+
+        function selectOperator(element) {
+            document.querySelectorAll('.operator-card').forEach(card => {
+                card.classList.remove('active');
+                card.style.border = '1px solid rgba(255,255,255,0.05)';
+                card.style.boxShadow = 'none';
+            });
+            element.classList.add('active');
+            selectedOperator = element.getAttribute('data-operator');
+            
+            let activeColor = '#e11d48'; // M-Pesa red
+            let shadowColor = 'rgba(225, 29, 72, 0.2)';
+            if (selectedOperator === 'airtel') {
+                activeColor = '#dc2626'; // Airtel red
+                shadowColor = 'rgba(220, 38, 38, 0.2)';
+            } else if (selectedOperator === 'halopesa') {
+                activeColor = '#ea580c'; // Halopesa orange
+                shadowColor = 'rgba(234, 88, 12, 0.2)';
+            } else if (selectedOperator === 'tigopesa') {
+                activeColor = '#2563eb'; // Tigo blue
+                shadowColor = 'rgba(37, 99, 235, 0.2)';
+            }
+            
+            element.style.border = `1px solid ${activeColor}`;
+            element.style.boxShadow = `0 4px 12px ${shadowColor}`;
+
+            const btn = document.getElementById('topupSubmitBtn');
+            const opName = element.querySelector('div').innerText;
+            btn.innerText = `Initiate ${opName} STK Push`;
+        }
+
+        async function triggerMobileMoneyCheckout() {
+            const amountVal = parseFloat(document.getElementById('topupAmount').value.trim());
+            const phoneVal = document.getElementById('topupPhone').value.trim();
+
+            if (isNaN(amountVal) || amountVal <= 0) {
+                showToast("Please enter a valid top up amount.", "error");
+                return;
+            }
+            if (!phoneVal) {
+                showToast("Please enter a valid phone number.", "error");
+                return;
+            }
+
+            const opName = selectedOperator.toUpperCase();
+            showToast(`Initiating secure ${opName} STK Push request to ${phoneVal}...`, "info");
+
+            try {
+                // Call /topup endpoint
+                const response = await fetch('/api/transactions/topup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-user-id': loggedInUser.id.toString()
+                    },
+                    body: JSON.stringify({
+                        user_id: loggedInUser.id,
+                        amount: amountVal,
+                        provider: selectedOperator,
+                        phone: phoneVal
+                    })
+                });
+
+                if (response.ok) {
+                    showToast(`${opName} STK Push dispatched. Simulating STK PIN prompt on phone...`, "info");
+                    
+                    // In sandbox, we wait 4.5 seconds for the backend simulation to complete
+                    setTimeout(async () => {
+                        try {
+                            // Sync profile to get updated balance from db
+                            await syncUserProfile();
+                            fetchUserActivityLogs();
+
+                            showToast(`Top Up of TZS ${amountVal.toLocaleString()} Successful via ${opName}!`, 'success');
+                            document.getElementById('topupAmount').value = '';
+                            
+                            // Send SMS Confirmation via backend send-sms route
+                            triggerN8NSMS(phoneVal, `SafariMove: ${opName} Deposit of TZS ${amountVal.toLocaleString()} Received. Your new balance is TZS ${parseFloat(loggedInUser.balance).toLocaleString()}.`);
+                        } catch (depErr) {
+                            console.error(depErr);
+                        }
+                    }, 4500);
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || "Failed to topup");
+                }
+            } catch(e) {
+                console.error(e);
+                showToast(`Checkout API failure: ${e.message}`, "error");
+            }
+        }
+
+        // Fetch user transactional ledgers and ride history
+        async function fetchUserActivityLogs() {
+            try {
+                // 1. Fetch transactions
+                const txRes = await fetch(`/api/transactions?user_id=${loggedInUser.id}`, {
+                    headers: { 'x-user-id': loggedInUser.id.toString() }
+                });
+                let transactions = [];
+                if (txRes.ok) {
+                    transactions = await txRes.json();
+                }
+
+                // Hydrate dashboard and payment history tab
+                const dashList = document.getElementById('dashActivityList');
+                const walletList = document.getElementById('walletTxList');
+
+                const renderedTxHTML = transactions.length === 0 ? 
+                    `<p style="color: #64748b; font-size: 0.85rem; padding: 10px 0;">No transactions found.</p>` :
+                    transactions.map(tx => {
+                        const isCredit = tx.type === 'topup' || tx.type === 'reward';
+                        const sign = isCredit ? '+' : '-';
+                        const cls = isCredit ? 'credit' : 'debit';
+                        const formattedDate = new Date(tx.created_at).toLocaleDateString(undefined, {
+                            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                        });
+                        return `
+                            <div class="tx-item">
+                                <div class="tx-left">
+                                    <div class="tx-type">${tx.type} • <span style="font-size:0.75rem; color:#64748b; text-transform:none;">${tx.reference || 'completed'}</span></div>
+                                    <div class="tx-date">${formattedDate}</div>
+                                </div>
+                                <div class="tx-amount ${cls}">${sign} TZS ${parseFloat(tx.amount).toLocaleString()}</div>
+                            </div>
+                        `;
+                    }).join('');
+
+                dashList.innerHTML = renderedTxHTML;
+                walletList.innerHTML = renderedTxHTML;
+            } catch (err) {
+                console.warn('Failed to load transaction logs:', err);
+            }
+        }
+
+        // USSD Cellphone terminal simulation
+        async function sendUSSDInput() {
+            const inputEl = document.getElementById('ussdInput');
+            const textVal = inputEl.value.trim();
+            inputEl.value = '';
+
+            let fullText = currentUssdText;
+            if (textVal.toLowerCase() === 'exit' || textVal.toLowerCase() === 'cancel') {
+                fullText = '';
+                currentUssdText = '';
+            } else {
+                fullText = currentUssdText ? (currentUssdText + '*' + textVal) : textVal;
+                currentUssdText = fullText;
+            }
+
+            document.getElementById('ussdTextDisplay').innerText = "Sending request...";
+
+            try {
+                const response = await fetch('/api/at/ussd', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sessionId: ussdSessionId,
+                        serviceCode: '*384*811#',
+                        phoneNumber: loggedInUser.phone,
+                        text: fullText
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.text();
+                    let display = data;
+                    if (data.startsWith('CON ')) {
+                        display = data.substring(4);
+                    } else if (data.startsWith('END ')) {
+                        display = data.substring(4) + "\n\n[Session ended. Press Send to restart]";
+                        currentUssdText = ''; // restart next
+                        // Reload dashboard logs/balance after USSD completes actions
+                        setTimeout(async () => {
+                            await syncUserProfile();
+                            fetchUserActivityLogs();
+                        }, 1000);
+                    }
+                    document.getElementById('ussdTextDisplay').innerText = display;
+                } else {
+                    document.getElementById('ussdTextDisplay').innerText = "END connection lost.";
+                    currentUssdText = '';
+                }
+            } catch (err) {
+                console.error(err);
+                document.getElementById('ussdTextDisplay').innerText = "END Network error.";
+                currentUssdText = '';
+            }
+        }
+
+        // Digital communications (routed through backend endpoints with n8n/AT SDK fallbacks)
+        async function triggerN8NSMS(phone, message) {
+            try {
+                await fetch('/api/at/send-sms', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phoneNumber: phone, message })
+                });
+            } catch (err) {
+                console.log('SMS notification dispatch via backend failed:', err.message);
+            }
+        }
+
+        async function triggerN8NWebhook(type) {
+            showToast(`Triggering ${type} dispatch via backend...`, 'info');
+            try {
+                let url, payload;
+                if (type === 'sms') {
+                    url = '/api/at/send-sms';
+                    payload = { phoneNumber: loggedInUser.phone, message: "SafariMove: Hello! This is a manual test message." };
+                } else if (type === 'airtime') {
+                    url = '/api/at/send-airtime';
+                    payload = { phoneNumber: loggedInUser.phone, amount: 500, currencyCode: 'TZS' };
+                } else {
+                    url = `http://localhost:5678/webhook-test/safarimove-${type}`;
+                    payload = { phoneNumber: loggedInUser.phone };
+                }
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    const jsonRes = await response.json();
+                    showToast(`Success! Dispatch response: ${jsonRes.message || 'Ok'}`, 'success');
+                    
+                    // Simulating the transaction balance credit if airtime is rewarded
+                    if (type === 'airtime') {
+                        setTimeout(async () => {
+                            await fetch('/api/transactions', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'x-user-id': loggedInUser.id.toString()
+                                },
+                                body: JSON.stringify({
+                                    user_id: loggedInUser.id,
+                                    amount: 500,
+                                    type: 'reward',
+                                    reference: 'AT_AIRTIME_REWARD_' + Date.now()
+                                })
+                            });
+                            await syncUserProfile();
+                            fetchUserActivityLogs();
+                        }, 2000);
+                    }
+                } else {
+                    showToast("Dispatch endpoint responded with error status.", "error");
+                }
+            } catch (err) {
+                console.warn(err);
+                showToast("Failed to reach backend dispatch endpoint.", "error");
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('safarimove_user');
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
