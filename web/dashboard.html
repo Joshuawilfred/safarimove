@@ -478,7 +478,7 @@
             <div class="nav-item" data-view="walletView"><i class="fa-solid fa-wallet"></i> Payments</div>
             <div class="nav-item" data-view="atSandboxView"><i class="fa-solid fa-tower-cell"></i> AT Sandbox</div>
         </div>
-        <div class="nav-item" style="margin-top: auto;" onclick="logout()">
+        <div class="nav-item" style="margin-top: auto;" onclick="Auth.logout()">
             <i class="fa-solid fa-arrow-right-from-bracket"></i> Log out
         </div>
     </aside>
@@ -919,15 +919,8 @@
 
         document.addEventListener('DOMContentLoaded', async () => {
             // 1. Auth check
-            const userStr = localStorage.getItem('safarimove_user');
-            if (!userStr) {
-                if (window.location.hash) {
-                    sessionStorage.setItem('safarimove_redirect_hash', window.location.hash);
-                }
-                window.location.href = 'login.html';
-                return;
-            }
-            loggedInUser = JSON.parse(userStr);
+            loggedInUser = Auth.requireAuth();
+            if (!loggedInUser) return;
 
             // 2. Hydrate Profile Info
             updateProfileUI();
@@ -1967,10 +1960,6 @@
             }
         }
 
-        function logout() {
-            localStorage.removeItem('safarimove_user');
-            window.location.href = 'index.html';
-        }
     </script>
 </body>
 </html>

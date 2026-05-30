@@ -407,10 +407,16 @@
                     const data = await response.json();
                     localStorage.setItem('safarimove_user', JSON.stringify(data.user));
                     showToast('Log in successful!', 'success');
-                    
+
                     setTimeout(() => {
                         redirectUser();
                     }, 1000);
+                } else if (response.status === 404) {
+                    const err = await response.json();
+                    showToast(err.error || 'No account found. Please sign up.', 'error');
+                    const phoneVal = document.getElementById('phoneLogin').value;
+                    switchTab('signup');
+                    document.getElementById('phoneSignup').value = phoneVal;
                 } else {
                     const err = await response.json();
                     showToast(err.error || 'Failed to log in', 'error');
