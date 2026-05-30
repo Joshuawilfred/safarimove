@@ -832,7 +832,7 @@
             <div class="view-subtitle">Offline capabilities simulator client</div>
 
             <!-- Retro USSD phone -->
-            <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 12px; color:#ffffff; text-align: center;">USSD Dial Code Simulator (*384*811#)</h3>
+            <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 12px; color:#ffffff; text-align: center;">USSD Dial Code Simulator (*384*66900#)</h3>
             <div class="ussd-phone-container">
                 <div class="ussd-screen">
                     <div class="ussd-header" style="border-bottom: 1px solid rgba(56, 189, 248, 0.2); padding-bottom: 6px; text-align: center; font-size: 0.75rem; letter-spacing: 0.05em;">SAFARIMOVE SIMULATOR</div>
@@ -849,15 +849,15 @@
             </div>
 
             <!-- Webhook Triggers -->
-            <h3 style="font-size: 1.1rem; font-weight: 600; margin-top: 24px; margin-bottom: 12px; color:#ffffff;">n8n Webhook Utilities</h3>
+            <h3 style="font-size: 1.1rem; font-weight: 600; margin-top: 24px; margin-bottom: 12px; color:#ffffff;">Africa's Talking Utilities</h3>
             <div style="display: flex; flex-direction: column; gap: 10px;">
                 <button class="btn btn-outline btn-block" style="text-align: left; display: flex; align-items: center; justify-content: space-between;" onclick="triggerN8NWebhook('sms')">
                     <span><i class="fa-solid fa-comment-sms text-success" style="margin-right:8px;"></i> Trigger SMS Alert Test</span>
                     <i class="fa-solid fa-chevron-right" style="font-size: 0.8rem; color:#64748b;"></i>
                 </button>
-                <button class="btn btn-outline btn-block" style="text-align: left; display: flex; align-items: center; justify-content: space-between;" onclick="triggerN8NWebhook('airtime')">
+                <button class="btn btn-outline btn-block" style="text-align: left; display: flex; align-items: center; justify-content: space-between; opacity: 0.45; cursor: not-allowed;" disabled title="Airtime disabled in sandbox">
                     <span><i class="fa-solid fa-gift text-accent" style="margin-right:8px;"></i> Request TZS 500 Airtime Reward</span>
-                    <i class="fa-solid fa-chevron-right" style="font-size: 0.8rem; color:#64748b;"></i>
+                    <span style="font-size: 0.75rem; color: #64748b;">Sandbox only</span>
                 </button>
             </div>
         </div>
@@ -1795,47 +1795,77 @@
             }
         }
 
-        // Fetch user transactional ledgers and ride history
+        // Fetch user transactional ledgers and ride history (trips + transactions merged)
         async function fetchUserActivityLogs() {
             try {
-                // 1. Fetch transactions
-                const txRes = await fetch(`/api/transactions?user_id=${loggedInUser.id}`, {
-                    headers: { 'x-user-id': loggedInUser.id.toString() }
-                });
-                let transactions = [];
-                if (txRes.ok) {
-                    transactions = await txRes.json();
-                }
+                const [txRes, tripsRes] = await Promise.all([
+                    fetch(`/api/transactions?user_id=${loggedInUser.id}`, {
+                        headers: { 'x-user-id': loggedInUser.id.toString() }
+                    }),
+                    fetch(`/api/trips?rider_id=${loggedInUser.id}`, {
+                        headers: { 'x-user-id': loggedInUser.id.toString() }
+                    })
+                ]);
 
-                // Hydrate dashboard and payment history tab
-                const dashList = document.getElementById('dashActivityList');
+                const transactions = txRes.ok ? await txRes.json() : [];
+                const trips = tripsRes.ok ? await tripsRes.json() : [];
+
+                // Wallet tab shows transactions only
                 const walletList = document.getElementById('walletTxList');
+                walletList.innerHTML = transactions.length === 0
+                    ? `<p style="color: #64748b; font-size: 0.85rem; padding: 10px 0;">No transactions recorded.</p>`
+                    : transactions.map(renderTxItem).join('');
 
-                const renderedTxHTML = transactions.length === 0 ? 
-                    `<p style="color: #64748b; font-size: 0.85rem; padding: 10px 0;">No transactions found.</p>` :
-                    transactions.map(tx => {
-                        const isCredit = tx.type === 'topup' || tx.type === 'reward';
-                        const sign = isCredit ? '+' : '-';
-                        const cls = isCredit ? 'credit' : 'debit';
-                        const formattedDate = new Date(tx.created_at).toLocaleDateString(undefined, {
-                            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                        });
-                        return `
-                            <div class="tx-item">
-                                <div class="tx-left">
-                                    <div class="tx-type">${tx.type} • <span style="font-size:0.75rem; color:#64748b; text-transform:none;">${tx.reference || 'completed'}</span></div>
-                                    <div class="tx-date">${formattedDate}</div>
-                                </div>
-                                <div class="tx-amount ${cls}">${sign} TZS ${parseFloat(tx.amount).toLocaleString()}</div>
-                            </div>
-                        `;
-                    }).join('');
+                // Dashboard tab merges trips + transactions, sorted newest first
+                const merged = [
+                    ...transactions.map(t => ({ ...t, _kind: 'tx' })),
+                    ...trips.map(t => ({ ...t, _kind: 'trip' }))
+                ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-                dashList.innerHTML = renderedTxHTML;
-                walletList.innerHTML = renderedTxHTML;
+                const dashList = document.getElementById('dashActivityList');
+                dashList.innerHTML = merged.length === 0
+                    ? `<p style="color: #64748b; font-size: 0.85rem; padding: 10px 0;">No recent activities found.</p>`
+                    : merged.map(item => item._kind === 'trip' ? renderTripItem(item) : renderTxItem(item)).join('');
             } catch (err) {
-                console.warn('Failed to load transaction logs:', err);
+                console.warn('Failed to load activity logs:', err);
             }
+        }
+
+        function renderTxItem(tx) {
+            const isCredit = tx.type === 'topup' || tx.type === 'reward';
+            const sign = isCredit ? '+' : '-';
+            const cls = isCredit ? 'credit' : 'debit';
+            const formattedDate = new Date(tx.created_at).toLocaleDateString(undefined, {
+                month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
+            return `
+                <div class="tx-item">
+                    <div class="tx-left">
+                        <div class="tx-type">${tx.type} • <span style="font-size:0.75rem; color:#64748b; text-transform:none;">${tx.reference || 'completed'}</span></div>
+                        <div class="tx-date">${formattedDate}</div>
+                    </div>
+                    <div class="tx-amount ${cls}">${sign} TZS ${parseFloat(tx.amount).toLocaleString()}</div>
+                </div>
+            `;
+        }
+
+        function renderTripItem(trip) {
+            const typeIcons = { ride: 'fa-car', delivery: 'fa-box', transit: 'fa-bus' };
+            const icon = typeIcons[trip.type] || 'fa-car';
+            const label = trip.type ? trip.type.charAt(0).toUpperCase() + trip.type.slice(1) : 'Ride';
+            const fare = trip.fare ? `TZS ${parseFloat(trip.fare).toLocaleString()}` : 'TZS —';
+            const formattedDate = new Date(trip.created_at).toLocaleDateString(undefined, {
+                month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
+            return `
+                <div class="tx-item">
+                    <div class="tx-left">
+                        <div class="tx-type"><i class="fa-solid ${icon}" style="margin-right:6px; color:#3b82f6;"></i>${label} • <span style="font-size:0.75rem; color:#64748b; text-transform:none;">${trip.status || 'pending'}</span></div>
+                        <div class="tx-date">${formattedDate}</div>
+                    </div>
+                    <div class="tx-amount debit">${fare}</div>
+                </div>
+            `;
         }
 
         // USSD Cellphone terminal simulation
@@ -1861,7 +1891,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         sessionId: ussdSessionId,
-                        serviceCode: '*384*811#',
+                        serviceCode: '*384*66900#',
                         phoneNumber: loggedInUser.phone,
                         text: fullText
                     })
@@ -1913,12 +1943,6 @@
                 if (type === 'sms') {
                     url = '/api/at/send-sms';
                     payload = { phoneNumber: loggedInUser.phone, message: "SafariMove: Hello! This is a manual test message." };
-                } else if (type === 'airtime') {
-                    url = '/api/at/send-airtime';
-                    payload = { phoneNumber: loggedInUser.phone, amount: 500, currencyCode: 'TZS' };
-                } else {
-                    url = `http://localhost:5678/webhook-test/safarimove-${type}`;
-                    payload = { phoneNumber: loggedInUser.phone };
                 }
 
                 const response = await fetch(url, {
@@ -1930,27 +1954,6 @@
                 if (response.ok) {
                     const jsonRes = await response.json();
                     showToast(`Success! Dispatch response: ${jsonRes.message || 'Ok'}`, 'success');
-                    
-                    // Simulating the transaction balance credit if airtime is rewarded
-                    if (type === 'airtime') {
-                        setTimeout(async () => {
-                            await fetch('/api/transactions', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'x-user-id': loggedInUser.id.toString()
-                                },
-                                body: JSON.stringify({
-                                    user_id: loggedInUser.id,
-                                    amount: 500,
-                                    type: 'reward',
-                                    reference: 'AT_AIRTIME_REWARD_' + Date.now()
-                                })
-                            });
-                            await syncUserProfile();
-                            fetchUserActivityLogs();
-                        }, 2000);
-                    }
                 } else {
                     showToast("Dispatch endpoint responded with error status.", "error");
                 }

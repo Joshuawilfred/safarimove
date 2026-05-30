@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const fetch = require('node-fetch'); // Ensure node-fetch is required
 const auth = require('../middleware/auth');
 
 // Create a new trip (ride or delivery)
@@ -27,29 +26,27 @@ router.post('/', auth, async (req, res) => {
             ]
         );
 
-        // Retrieve user's phone number to send SMS
-        const [users] = await db.execute('SELECT phone FROM users WHERE id = ?', [rider_id]);
-        if (users.length > 0) {
-            const phone = users[0].phone;
-            try {
-                await fetch('http://localhost:5678/webhook-test/safarimove-sms', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        phoneNumber: phone,
-                        message: `SafariMove: Your ${type} has been requested. A driver will be assigned shortly. Fare: TZS ${fare}.`
-                    })
-                });
-                console.log('Triggered n8n SMS webhook for trip', result.insertId);
-            } catch (err) {
-                console.error('Failed to trigger n8n SMS webhook:', err);
-            }
-        }
-
         res.status(201).json({ message: 'Trip requested successfully', trip_id: result.insertId });
     } catch (error) {
         console.error('Error creating trip:', error);
         res.status(500).json({ error: 'Database error while creating trip' });
+    }
+});
+
+// Get trips for a rider via ?rider_id=N query filter
+router.get('/', auth, async (req, res) => {
+    try {
+        const { rider_id } = req.query;
+        if (!rider_id) {
+            return res.status(400).json({ error: 'rider_id query param required' });
+        }
+        const [trips] = await db.execute(
+            'SELECT * FROM trips WHERE rider_id = ? ORDER BY created_at DESC LIMIT 20',
+            [parseInt(rider_id, 10)]
+        );
+        res.json(trips);
+    } catch (error) {
+        res.status(500).json({ error: 'Database error' });
     }
 });
 
