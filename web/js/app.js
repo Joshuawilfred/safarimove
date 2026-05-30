@@ -79,6 +79,22 @@ window.showToast = function(message, type = 'info') {
     }, 5000);
 };
 
+// Auth client — guards pages, stores/reads user, attaches x-user-id header
+window.Auth = {
+    getUser() { try { return JSON.parse(localStorage.getItem('safarimove_user')); } catch { return null; } },
+    setUser(u) { localStorage.setItem('safarimove_user', JSON.stringify(u)); },
+    logout() { localStorage.removeItem('safarimove_user'); window.location.href = 'login.html'; },
+    requireAuth() { const u = this.getUser(); if (!u) { window.location.href = 'login.html'; return null; } return u; },
+    async apiFetch(url, options = {}) {
+        const u = this.getUser();
+        const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+        if (u) headers['x-user-id'] = u.id;
+        const res = await fetch(url, { ...options, headers });
+        if (res.status === 401) this.logout();
+        return res;
+    }
+};
+
 // Add keyframes for toast animation
 const style = document.createElement('style');
 style.textContent = `
